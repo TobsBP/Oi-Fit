@@ -33,10 +33,10 @@ export default function RootLayout({
 			>
 				<CartProvider>
 					<BackgroundFruits />
-					<div className="relative z-10">
+					<div className="relative z-10 flex flex-col min-h-screen">
 						<NavBar />
 						<CartSidebar />
-						{children}
+						<main className="flex-1">{children}</main>
 						<Footer />
 					</div>
 				</CartProvider>

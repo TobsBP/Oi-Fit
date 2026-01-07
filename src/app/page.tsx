@@ -58,7 +58,7 @@ export default function HomePage() {
 					<div className="text-center max-w-4xl">
 						<div className="mb-8 animate-fade-in">
 							<div className="inline-block bg-white/20 backdrop-blur-md px-6 py-2 rounded-full text-white font-semibold mb-6">
-								Bem-vindo à Oi-Fit
+								Bem-vindo à OiFit
 							</div>
 						</div>
 						<h1 className="text-5xl md:text-7xl font-bold text-white mb-6 animate-slide-up">

@@ -68,8 +68,11 @@ export default function CartSidebar() {
 							</button>
 						</div>
 					) : (
-						items.map(({ product, quantity }) => (
-							<div key={product.id} className="flex gap-4">
+						items.map(({ product, quantity, size, color }, index) => (
+							<div
+								key={`${product.id}-${size}-${color}-${index}`}
+								className="flex gap-4"
+							>
 								<div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
 									<Image
 										src={product.image}
@@ -80,12 +83,20 @@ export default function CartSidebar() {
 								</div>
 								<div className="flex-1 flex flex-col justify-between">
 									<div className="flex justify-between">
-										<h3 className="font-semibold text-gray-800">
-											{product.name}
-										</h3>
+										<div>
+											<h3 className="font-semibold text-gray-800">
+												{product.name}
+											</h3>
+											{(size || color) && (
+												<p className="text-xs text-gray-500 mt-1">
+													{size && <span className="mr-2">Tam: {size}</span>}
+													{color && <span>Cor: {color}</span>}
+												</p>
+											)}
+										</div>
 										<button
 											type="button"
-											onClick={() => removeFromCart(product.id)}
+											onClick={() => removeFromCart(product.id, size, color)}
 											className="text-red-500 hover:text-red-600 p-1"
 											aria-label="Remove item"
 										>
@@ -112,7 +123,9 @@ export default function CartSidebar() {
 										<div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
 											<button
 												type="button"
-												onClick={() => updateQuantity(product.id, quantity - 1)}
+												onClick={() =>
+													updateQuantity(product.id, quantity - 1, size, color)
+												}
 												className="w-6 h-6 flex items-center justify-center rounded bg-white shadow text-gray-600 hover:text-[#3C5F2D]"
 												aria-label="Decrease quantity"
 											>
@@ -123,7 +136,9 @@ export default function CartSidebar() {
 											</span>
 											<button
 												type="button"
-												onClick={() => updateQuantity(product.id, quantity + 1)}
+												onClick={() =>
+													updateQuantity(product.id, quantity + 1, size, color)
+												}
 												className="w-6 h-6 flex items-center justify-center rounded bg-white shadow text-gray-600 hover:text-[#3C5F2D]"
 												aria-label="Increase quantity"
 											>

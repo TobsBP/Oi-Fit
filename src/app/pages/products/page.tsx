@@ -246,15 +246,27 @@ function ProductsContent() {
 						>
 							<div className="relative aspect-square overflow-hidden bg-gray-100">
 								<Image
-									src={product.image}
+									src={
+										product.images && product.images.length > 0
+											? product.images[0]
+											: product.image
+									}
 									alt={product.name}
 									width={400}
 									height={400}
-									className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+									className={`w-full h-full object-cover transition-transform duration-500 ${product.stock === 0 ? 'grayscale' : 'group-hover:scale-110'}`}
 								/>
-								<div className="absolute top-3 right-3 bg-[#3C5F2D] text-white px-3 py-2 rounded-full font-semibold">
-									R$ {product.price.toFixed(2)}
-								</div>
+								{product.stock === 0 ? (
+									<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+										<span className="bg-red-600 text-white px-4 py-2 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg">
+											Esgotado
+										</span>
+									</div>
+								) : (
+									<div className="absolute top-3 right-3 bg-[#3C5F2D] text-white px-3 py-2 rounded-full font-semibold">
+										R$ {product.price.toFixed(2)}
+									</div>
+								)}
 							</div>
 							<div className="p-4">
 								<p className="text-xs uppercase tracking-wide text-[#3C5F2D] font-semibold mb-1">
