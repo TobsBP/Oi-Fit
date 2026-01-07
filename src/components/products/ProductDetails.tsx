@@ -102,7 +102,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 											type="button"
 											key={img}
 											onClick={() => setSelectedImage(img)}
-											className={`relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
+											className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
 												selectedImage === img
 													? 'border-[#3C5F2D] ring-2 ring-[#3C5F2D]/30 opacity-100 scale-105'
 													: 'border-transparent opacity-70 hover:opacity-100'

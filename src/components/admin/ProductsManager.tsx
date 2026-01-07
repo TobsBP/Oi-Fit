@@ -313,7 +313,7 @@ export default function ProductsManager() {
 							<button
 								type="button"
 								onClick={addVariant}
-								className="bg-[#3C5F2D] text-white px-3 py-1 rounded hover:bg-[#2d4721] text-sm h-[34px]"
+								className="bg-[#3C5F2D] text-white px-3 py-1 rounded hover:bg-[#2d4721] text-sm h-8.5"
 							>
 								Adicionar
 							</button>
