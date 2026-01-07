@@ -65,7 +65,7 @@ function ProductsContent() {
 
 	return (
 		<div className="min-h-screen bg-linear-to-br from-[#a5c893] to-[#8fb377] text-black">
-			<div className="max-w-7xl mx-auto p-6 md:p-8">
+			<div className="max-w-7xl mx-auto p-6 md:p-8 pt-20 md:pt-20">
 				{/* Header */}
 				<div className="mb-8">
 					<h1 className="text-4xl md:text-5xl font-bold text-[#3C5F2D] mb-2">
