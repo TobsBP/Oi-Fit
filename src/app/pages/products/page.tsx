@@ -71,12 +71,6 @@ function ProductsContent() {
 					<h1 className="text-4xl md:text-5xl font-bold text-[#3C5F2D] mb-2">
 						Produtos
 					</h1>
-					<p className="text-lg text-[#3C5F2D]/80">
-						{sortedProducts.length}{' '}
-						{sortedProducts.length === 1
-							? 'produto encontrado'
-							: 'produtos encontrados'}
-					</p>
 				</div>
 
 				{/* Controles de filtro e ordenação */}
@@ -191,7 +185,7 @@ function ProductsContent() {
 						</button>
 
 						{showFilterMenu && (
-							<div className="absolute top-full mt-2 bg-white rounded-2xl shadow-2xl border-2 border-[#3C5F2D] overflow-hidden z-10 min-w-[200px]">
+							<div className="absolute top-full mt-2 bg-white rounded-2xl shadow-2xl border-2 border-[#3C5F2D] overflow-hidden z-10 min-w-50">
 								{categories.map((cat) => (
 									<button
 										type="button"
@@ -258,7 +252,7 @@ function ProductsContent() {
 									height={400}
 									className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
 								/>
-								<div className="absolute top-3 right-3 bg-[#3C5F2D] text-white px-3 py-1 rounded-full text-sm font-semibold">
+								<div className="absolute top-3 right-3 bg-[#3C5F2D] text-white px-3 py-2 rounded-full font-semibold">
 									R$ {product.price.toFixed(2)}
 								</div>
 							</div>

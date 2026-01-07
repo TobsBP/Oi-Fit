@@ -3,6 +3,7 @@ export const products = [
 		id: 1,
 		name: 'Produto 1',
 		price: 99.9,
+		originalPrice: 129.9,
 		category: 'Top',
 		image: '/Logo.jpg',
 		description: 'This is a detailed description for Produto 1.',

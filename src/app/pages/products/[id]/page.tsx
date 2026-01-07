@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import AddToCartButton from '@/src/components/products/AddToCartButton';
 import { products } from '@/src/data/products';
 
 export default async function ProductPage({
@@ -22,46 +23,56 @@ export default async function ProductPage({
 	}
 
 	return (
-		<div className="min-h-screen bg-[#a5c893] text-black p-6">
-			<Link
-				href="/pages/products"
-				className="inline-block mb-6 px-6 py-2 bg-white rounded-lg hover:bg-gray-100 transition-colors"
-			>
-				← Voltar
-			</Link>
-
-			<div className="max-w-4xl mx-auto bg-white rounded-3xl p-8 shadow-lg">
-				<div className="grid md:grid-cols-2 gap-8">
-					<div className="aspect-square relative rounded-2xl overflow-hidden bg-gray-100">
-						<Image
-							src={product.image}
-							alt={product.name}
-							fill
-							className="object-cover"
-							sizes="(max-width: 768px) 100vw, 50vw"
-						/>
-					</div>
-
-					<div className="flex flex-col justify-center">
-						<span className="text-sm text-gray-500 mb-2 uppercase tracking-wide">
-							{product.category}
-						</span>
-						<h1 className="text-4xl font-bold mb-4">{product.name}</h1>
-						<p className="text-3xl font-bold text-[#a5c893] mb-6">
-							R$ {product.price.toFixed(2)}
-						</p>
-
-						<div className="prose max-w-none text-gray-600 mb-8">
-							<p>{product.description}</p>
+		<div className="min-h-screen bg-[#a5c893] text-black p-6 pt-28">
+			<div className="max-w-4xl mx-auto">
+				<div className="bg-white rounded-3xl p-8 shadow-lg">
+					<div className="grid md:grid-cols-2 gap-8">
+						<div className="aspect-square relative rounded-2xl overflow-hidden bg-gray-100">
+							<Image
+								src={product.image}
+								alt={product.name}
+								fill
+								className="object-cover"
+								sizes="(max-width: 768px) 100vw, 50vw"
+							/>
 						</div>
 
-						<button
-							type="button"
-							className="w-full bg-[#a5c893] text-white py-4 rounded-xl text-lg font-bold hover:bg-[#8eb37d] transition-colors"
-						>
-							Adicionar ao Carrinho
-						</button>
+						<div className="flex flex-col justify-center">
+							<h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+							<div className="flex flex-col mb-6">
+								{product.originalPrice &&
+									product.originalPrice > product.price && (
+										<span className="text-lg text-gray-400 line-through mb-1">
+											R$ {product.originalPrice.toFixed(2)}
+										</span>
+									)}
+								<p className="text-3xl font-bold text-[#a5c893]">
+									R$ {product.price.toFixed(2)}
+								</p>
+							</div>
+
+							<div className="prose max-w-none text-gray-600 mb-8">
+								<p>{product.description}</p>
+							</div>
+
+							<AddToCartButton product={product} />
+						</div>
 					</div>
+				</div>
+
+				<div className="mt-8 flex flex-row gap-4 justify-center">
+					<Link
+						href="/pages/products"
+						className="flex-1 max-w-50 px-4 py-3 bg-white rounded-xl hover:bg-gray-100 transition-colors shadow-lg font-medium text-[#3C5F2D] text-center text-sm sm:text-base"
+					>
+						← Voltar
+					</Link>
+					<Link
+						href={`/pages/products?category=${product.category}`}
+						className="flex-1 max-w-50 px-4 py-3 bg-[#2d4722] text-white rounded-xl hover:bg-[#2d4722] transition-colors shadow-lg font-medium text-center text-sm sm:text-base"
+					>
+						Mais {product.category}
+					</Link>
 				</div>
 			</div>
 		</div>
