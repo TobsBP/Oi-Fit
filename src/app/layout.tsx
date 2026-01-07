@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import BackgroundFruits from '@/src/components/ui/BackgroundFruits';
 import CartSidebar from '@/src/components/ui/Cart/CartSidebar';
 import Footer from '@/src/components/ui/Footer/Footer';
 import NavBar from '@/src/components/ui/NavBar/NavBar';
@@ -32,10 +33,13 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
 				<CartProvider>
-					<NavBar />
-					<CartSidebar />
-					{children}
-					<Footer />
+					<BackgroundFruits />
+					<div className="relative z-10">
+						<NavBar />
+						<CartSidebar />
+						{children}
+						<Footer />
+					</div>
 				</CartProvider>
 			</body>
 		</html>

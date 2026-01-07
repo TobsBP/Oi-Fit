@@ -1,11 +1,38 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCart } from '@/src/context/CartContext';
+
+const fruitImages = [
+	'/Fruta_01.png',
+	'/Fruta_02.png',
+	'/Fruta_03.png',
+	'/Fruta_04.png',
+];
+
+interface FruitPosition {
+	id: number;
+	top: number;
+	left: number;
+	rotation: number;
+}
 
 export default function NavBar() {
 	const [isOpen, setIsOpen] = useState(false);
+	const [fruitPositions, setFruitPositions] = useState<FruitPosition[]>([]);
 	const { toggleCart, totalItems } = useCart();
+
+	useEffect(() => {
+		const positions = Array.from({ length: 50 }).map((_, i) => ({
+			id: i,
+			top: Math.random() * 100,
+			left: Math.random() * 200,
+			rotation: Math.random() * 360,
+		}));
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		setFruitPositions(positions);
+	}, []);
 
 	const menuItems = [
 		{ href: '/', label: 'Início' },
@@ -86,39 +113,63 @@ export default function NavBar() {
 
 			{/* Menu lateral moderno */}
 			<nav
-				className={`fixed top-0 left-0 h-full w-72 bg-[#3C5F2D] shadow-2xl z-40 transform transition-transform duration-300 ease-out ${
+				className={`fixed top-0 left-0 h-full w-72 bg-[#3C5F2D] shadow-2xl z-40 transform transition-transform duration-300 ease-out overflow-hidden ${
 					isOpen ? 'translate-x-0' : '-translate-x-full'
 				}`}
 			>
-				{/* Header do menu */}
-				<div className="pt-20 px-8 pb-6 border-b border-white/20">
-					<h2 className="text-white text-2xl font-bold">Menu</h2>
-					<p className="text-[#a5c893] text-sm mt-1">Navegue pela loja</p>
+				{/* Frutas decorativas no menu */}
+				<div className="absolute inset-0 pointer-events-none opacity-10">
+					{fruitPositions.map((pos) => (
+						<div
+							key={pos.id}
+							className="absolute"
+							style={{
+								top: `${pos.top}%`,
+								left: `${pos.left}%`,
+							}}
+						>
+							<Image
+								src={fruitImages[pos.id % fruitImages.length]}
+								alt=""
+								width={100}
+								height={100}
+								className="object-contain"
+							/>
+						</div>
+					))}
 				</div>
 
-				{/* Lista de itens */}
-				<div className="px-6 py-8">
-					<ul className="space-y-2">
-						{menuItems.map((item) => (
-							<li key={item.label}>
-								<Link
-									href={item.href}
-									onClick={() => setIsOpen(false)}
-									className="block px-4 py-3 text-white text-lg font-medium rounded-2xl hover:bg-[#a5c893] hover:text-black transition-all duration-200 transform hover:translate-x-2"
-								>
-									{item.label}
-								</Link>
-							</li>
-						))}
-					</ul>
-				</div>
+				<div className="relative z-10 h-full flex flex-col">
+					{/* Header do menu */}
+					<div className="pt-20 px-8 pb-6 border-b border-white/20">
+						<h2 className="text-white text-2xl font-bold">Menu</h2>
+						<p className="text-[#a5c893] text-sm mt-1">Navegue pela loja</p>
+					</div>
 
-				{/* Footer do menu */}
-				<div className="absolute bottom-0 left-0 right-0 p-6 border-t border-white/20">
-					<div className="text-center">
-						<p className="text-[#a5c893] text-sm">
-							© 2026 Oi Fit. Todos os direitos reservados.
-						</p>
+					{/* Lista de itens */}
+					<div className="px-6 py-8 flex-1 overflow-y-auto">
+						<ul className="space-y-2">
+							{menuItems.map((item) => (
+								<li key={item.label}>
+									<Link
+										href={item.href}
+										onClick={() => setIsOpen(false)}
+										className="block px-4 py-3 text-white text-lg font-medium rounded-2xl hover:bg-[#a5c893] hover:text-black transition-all duration-200 transform hover:translate-x-2"
+									>
+										{item.label}
+									</Link>
+								</li>
+							))}
+						</ul>
+					</div>
+
+					{/* Footer do menu */}
+					<div className="p-6 border-t border-white/20">
+						<div className="text-center">
+							<p className="text-[#a5c893] text-sm">
+								© 2026 Oi Fit. Todos os direitos reservados.
+							</p>
+						</div>
 					</div>
 				</div>
 			</nav>

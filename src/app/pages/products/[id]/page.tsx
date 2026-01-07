@@ -13,7 +13,7 @@ export default async function ProductPage({
 
 	if (!product) {
 		return (
-			<div className="min-h-screen bg-[#a5c893] text-black p-6 flex flex-col items-center justify-center">
+			<div className="min-h-screen text-black p-6 flex flex-col items-center justify-center">
 				<h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
 				<Link href="/pages/products" className="text-blue-600 hover:underline">
 					Voltar para produtos
@@ -23,7 +23,7 @@ export default async function ProductPage({
 	}
 
 	return (
-		<div className="min-h-screen bg-[#a5c893] text-black p-6 pt-28">
+		<div className="min-h-screen text-black p-6 pt-28">
 			<div className="max-w-4xl mx-auto">
 				<div className="bg-white rounded-3xl p-8 shadow-lg">
 					<div className="grid md:grid-cols-2 gap-8">
