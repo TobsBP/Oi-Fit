@@ -1,9 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useCart } from '@/src/context/CartContext';
 
 export default function NavBar() {
 	const [isOpen, setIsOpen] = useState(false);
+	const { toggleCart, totalItems } = useCart();
 
 	const menuItems = [
 		{ href: '/', label: 'Início' },
@@ -36,6 +38,37 @@ export default function NavBar() {
 				<div
 					className={`w-6 h-0.5 bg-white transition-transform duration-300 ${isOpen ? '-rotate-45 -translate-y-2' : ''}`}
 				></div>
+			</button>
+
+			{/* Botão do Carrinho */}
+			<button
+				type="button"
+				onClick={toggleCart}
+				className="fixed top-6 right-6 z-40 p-3 border-2 border-white rounded-2xl bg-[#3C5F2D] text-white hover:bg-[#4a7338] transition-all duration-300 shadow-lg flex items-center gap-2"
+				aria-label="Carrinho"
+			>
+				<div className="relative">
+					<svg
+						className="w-6 h-6"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+						/>
+					</svg>
+					{totalItems > 0 && (
+						<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#3C5F2D]">
+							{totalItems}
+						</span>
+					)}
+				</div>
+				<span className="hidden sm:inline font-medium">Carrinho</span>
 			</button>
 
 			{/* Overlay com blur */}
