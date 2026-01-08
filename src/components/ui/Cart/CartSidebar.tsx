@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useCart } from '@/src/context/CartContext';
 
 export default function CartSidebar() {
@@ -160,12 +161,13 @@ export default function CartSidebar() {
 								R$ {totalPrice.toFixed(2)}
 							</span>
 						</div>
-						<button
-							type="button"
-							className="w-full bg-[#3C5F2D] text-white py-4 rounded-xl text-lg font-bold hover:bg-[#2d4722] transition-colors shadow-lg shadow-[#3C5F2D]/20"
+						<Link
+							href="/pages/purchase"
+							onClick={toggleCart}
+							className="block w-full bg-[#3C5F2D] text-white py-4 rounded-xl text-lg font-bold hover:bg-[#2d4722] transition-colors shadow-lg shadow-[#3C5F2D]/20 text-center"
 						>
 							Finalizar Compra
-						</button>
+						</Link>
 					</div>
 				)}
 			</div>
