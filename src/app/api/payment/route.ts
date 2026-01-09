@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
 import { products } from '@/src/data/products';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-	typescript: true,
-});
+import { stripe } from '@/src/lib/stripe';
 
 const calculateOrderAmount = (
 	items: { product: { id: number }; quantity: number }[],

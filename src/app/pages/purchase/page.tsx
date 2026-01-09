@@ -17,7 +17,7 @@ export default function PurchasePage() {
 	useEffect(() => {
 		if (items.length === 0) return;
 
-		fetch('/api/create-payment-intent', {
+		fetch('/api/payment', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ items }),
