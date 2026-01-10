@@ -45,7 +45,7 @@ export async function GET(req: Request) {
 				addresses: dbUser.addresses,
 				orders: dbUser.orders.map((order: Order) => ({
 					...order,
-					totalPrice: Number(order.totalPrice),
+					totalPrice: parseFloat(order.totalPrice.toString()),
 				})),
 			});
 		}

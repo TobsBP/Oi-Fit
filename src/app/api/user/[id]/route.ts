@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/src/lib/prisma';
+import type { Order } from '@/src/types/order';
 
 export async function GET(
-	req: Request,
+	_req: Request,
 	{ params }: { params: Promise<{ id: string }> },
 ) {
 	try {
@@ -31,7 +32,13 @@ export async function GET(
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		return NextResponse.json(user);
+		return NextResponse.json({
+			...user,
+			orders: user.orders.map((order: Order) => ({
+				...order,
+				totalPrice: Number(order.totalPrice),
+			})),
+		});
 	} catch (error) {
 		console.error('Internal Error:', error);
 		return NextResponse.json(

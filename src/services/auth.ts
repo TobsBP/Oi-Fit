@@ -70,7 +70,7 @@ export async function signOut(router: any) {
 
 		router.push('/pages/products');
 		router.refresh();
-	} catch (error) {
+	} catch (_error) {
 		alert('Ocorreu um erro ao sair da conta.');
 	}
 }
