@@ -1,8 +1,8 @@
-import type { registerSchema } from '../types/auth';
-import { supabase } from './supabase';
+import { supabase } from '../lib/supabase';
+import type { Register } from '../types/auth';
 
 export async function signUp(
-	data: registerSchema,
+	data: Register,
 	router: any,
 	setLoading: (loading: boolean) => void,
 ) {
@@ -28,6 +28,32 @@ export async function signUp(
 	} catch (error) {
 		console.error('Signup error:', error);
 		alert('Ocorreu um erro ao criar a conta.');
+	} finally {
+		setLoading(false);
+	}
+}
+
+export async function signIn(
+	data: { email: string; password: string },
+	router: any,
+	setLoading: (loading: boolean) => void,
+) {
+	try {
+		const { error } = await supabase.auth.signInWithPassword({
+			email: data.email,
+			password: data.password,
+		});
+
+		if (error) {
+			alert(error.message);
+			return;
+		}
+
+		alert('Login realizado com sucesso!');
+		router.push('/');
+	} catch (error) {
+		console.error('Signin error:', error);
+		alert('Ocorreu um erro ao fazer login.');
 	} finally {
 		setLoading(false);
 	}

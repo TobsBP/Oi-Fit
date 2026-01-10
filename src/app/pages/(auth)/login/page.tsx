@@ -4,7 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { ZodError } from 'zod';
+import { signIn } from '@/src/services/auth';
+import { loginSchema } from '@/src/types/auth';
 
 export default function LoginPage() {
 	const [loginValue, setLoginValue] = useState('');
@@ -18,24 +20,18 @@ export default function LoginPage() {
 		setLoading(true);
 
 		try {
-			const isEmail = loginValue.includes('@');
-			const credentials = isEmail
-				? { email: loginValue, password }
-				: { phone: loginValue, password };
+			const credentials = { email: loginValue, password };
 
-			const { error } = await supabase.auth.signInWithPassword(credentials);
+			loginSchema.parse(credentials);
 
-			if (error) {
-				alert(error.message);
-				return;
-			}
-
-			router.push('/');
-			router.refresh();
+			await signIn(credentials, router, setLoading);
 		} catch (error) {
-			console.error('Login error:', error);
-			alert('Ocorreu um erro ao fazer login.');
-		} finally {
+			if (error instanceof ZodError) {
+				alert('Errorrrrr');
+			} else {
+				console.error('Login error:', error);
+				alert('Ocorreu um erro ao fazer login.');
+			}
 			setLoading(false);
 		}
 	};
