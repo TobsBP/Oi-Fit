@@ -37,6 +37,8 @@ export default function NavBar() {
 	const menuItems = [
 		{ href: '/', label: 'Início' },
 		{ href: '/pages/login', label: 'Login' },
+		{ href: '/pages/register', label: 'Cadastro' },
+		{ href: '/pages/profile', label: 'Perfil' },
 		{ href: '/pages/products', label: 'Produtos' },
 		{ href: '/pages/products?category=Top', label: 'Tops' },
 		{ href: '/pages/products?category=Calça', label: 'Calças' },
