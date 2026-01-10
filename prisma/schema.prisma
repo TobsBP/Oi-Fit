@@ -83,7 +83,7 @@ model Order {
   userId      String
   
   status      OrderStatus @default(PENDING)
-  totalPrice  Decimal     @db.Decimal(10, 2)
+  totalPrice  Float
   
   shippingAddress Json    
   
