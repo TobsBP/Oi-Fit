@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import CheckoutForm from '@/src/components/purchase/CheckoutForm';
 import { useCart } from '@/src/context/CartContext';
 
-const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY;
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 export default function PurchasePage() {
