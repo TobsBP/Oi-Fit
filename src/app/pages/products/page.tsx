@@ -3,8 +3,43 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
-import { products } from '@/src/data/products';
+import { Suspense, useEffect, useState } from 'react';
+
+// Define the Product interface matching what we use in the component
+interface ProductVariant {
+	size: string;
+	color: string;
+	stock: number;
+}
+
+interface Product {
+	id: string; // Changed from number to string for UUID
+	name: string;
+	price: number;
+	originalPrice?: number;
+	category: string;
+	image: string;
+	images: string[];
+	description: string;
+	stock: number;
+	variants: ProductVariant[];
+}
+
+interface ApiVariant {
+	size: string;
+	color: string;
+	stock: number;
+	images?: string[];
+}
+
+interface ApiProduct {
+	id: string;
+	name: string;
+	price: number;
+	category?: { name: string };
+	description?: string;
+	variants: ApiVariant[];
+}
 
 function ProductsContent() {
 	const router = useRouter();
@@ -12,11 +47,57 @@ function ProductsContent() {
 	const categoryParam = searchParams.get('category');
 	const filterCategory = categoryParam || 'all';
 
+	const [products, setProducts] = useState<Product[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 	const [sortOrder, setSortOrder] = useState('default');
 	const [currentPage, setCurrentPage] = useState(1);
 	const [showSortMenu, setShowSortMenu] = useState(false);
 	const [showFilterMenu, setShowFilterMenu] = useState(false);
 	const itemsPerPage = 12;
+
+	useEffect(() => {
+		const fetchProducts = async () => {
+			setIsLoading(true);
+			try {
+				const res = await fetch('/api/products');
+				if (!res.ok) throw new Error('Failed to fetch products');
+				const data = await res.json();
+
+				const transformedProducts: Product[] = data.map((p: ApiProduct) => {
+					const images =
+						p.variants.length > 0 && p.variants[0].images
+							? p.variants[0].images
+							: ['/Logo.jpg'];
+					return {
+						id: p.id,
+						name: p.name,
+						price: Number(p.price),
+						originalPrice: 0,
+						category: p.category?.name || '',
+						description: p.description || '',
+						stock: p.variants.reduce(
+							(acc: number, v: ApiVariant) => acc + (v.stock || 0),
+							0,
+						),
+						variants: p.variants.map((v: ApiVariant) => ({
+							size: v.size,
+							color: v.color,
+							stock: v.stock,
+						})),
+						image: images[0] || '/Logo.jpg',
+						images: images,
+					};
+				});
+				setProducts(transformedProducts);
+			} catch (error) {
+				console.error(error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		fetchProducts();
+	}, []);
 
 	const categories = [
 		'all',
@@ -62,6 +143,14 @@ function ProductsContent() {
 			router.push(`/pages/products?category=${category}`);
 		}
 	};
+
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center text-[#3C5F2D]">
+				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3C5F2D]"></div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen text-black">

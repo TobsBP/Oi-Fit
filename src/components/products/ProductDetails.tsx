@@ -12,7 +12,7 @@ interface ProductVariant {
 }
 
 interface Product {
-	id: number;
+	id: string | number;
 	name: string;
 	price: number;
 	originalPrice?: number;

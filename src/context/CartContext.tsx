@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 export interface Product {
-	id: number;
+	id: string | number;
 	name: string;
 	price: number;
 	originalPrice?: number;
@@ -24,9 +24,13 @@ interface CartContextType {
 	items: CartItem[];
 	isOpen: boolean;
 	addToCart: (product: Product, size?: string, color?: string) => void;
-	removeFromCart: (productId: number, size?: string, color?: string) => void;
+	removeFromCart: (
+		productId: string | number,
+		size?: string,
+		color?: string,
+	) => void;
 	updateQuantity: (
-		productId: number,
+		productId: string | number,
 		quantity: number,
 		size?: string,
 		color?: string,
@@ -82,7 +86,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 		setIsOpen(true);
 	};
 
-	const removeFromCart = (productId: number, size?: string, color?: string) => {
+	const removeFromCart = (
+		productId: string | number,
+		size?: string,
+		color?: string,
+	) => {
 		setItems((prev) =>
 			prev.filter(
 				(item) =>
@@ -96,7 +104,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 	};
 
 	const updateQuantity = (
-		productId: number,
+		productId: string | number,
 		quantity: number,
 		size?: string,
 		color?: string,

@@ -1,9 +1,14 @@
 import { supabase } from '../lib/supabase';
 import type { Register } from '../types/auth';
 
+interface Router {
+	push: (url: string) => void;
+	refresh: () => void;
+}
+
 export async function signUp(
 	data: Register,
-	router: any,
+	router: Router,
 	setLoading: (loading: boolean) => void,
 ) {
 	try {
@@ -35,7 +40,7 @@ export async function signUp(
 
 export async function signIn(
 	data: { email: string; password: string },
-	router: any,
+	router: Router,
 	setLoading: (loading: boolean) => void,
 ) {
 	try {
@@ -59,7 +64,7 @@ export async function signIn(
 	}
 }
 
-export async function signOut(router: any) {
+export async function signOut(router: Router) {
 	try {
 		const { error } = await supabase.auth.signOut();
 

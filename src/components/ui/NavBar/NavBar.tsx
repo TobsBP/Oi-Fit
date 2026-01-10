@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/src/context/CartContext';
+import { supabase } from '@/src/lib/supabase';
 
 const fruitImages = [
 	'/Fruta_01.png',
@@ -21,9 +22,25 @@ interface FruitPosition {
 export default function NavBar() {
 	const [isOpen, setIsOpen] = useState(false);
 	const [fruitPositions, setFruitPositions] = useState<FruitPosition[]>([]);
+	const [userEmail, setUserEmail] = useState<string | null>(null);
 	const { toggleCart, totalItems } = useCart();
 
 	useEffect(() => {
+		const fetchUser = async () => {
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			setUserEmail(user?.email ?? null);
+		};
+
+		fetchUser();
+
+		const {
+			data: { subscription },
+		} = supabase.auth.onAuthStateChange((_event, session) => {
+			setUserEmail(session?.user?.email ?? null);
+		});
+
 		const positions = Array.from({ length: 50 }).map((_, i) => ({
 			id: i,
 			top: Math.random() * 100,
@@ -32,13 +49,18 @@ export default function NavBar() {
 		}));
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setFruitPositions(positions);
+
+		return () => subscription.unsubscribe();
 	}, []);
+
+	const isAdmin = userEmail === 'useoifit@gmail.com';
 
 	const menuItems = [
 		{ href: '/', label: 'Início' },
 		{ href: '/pages/login', label: 'Login' },
 		{ href: '/pages/register', label: 'Cadastro' },
 		{ href: '/pages/profile', label: 'Perfil' },
+		...(isAdmin ? [{ href: '/pages/admin', label: 'Admin' }] : []),
 		{ href: '/pages/products', label: 'Produtos' },
 		{ href: '/pages/products?category=Top', label: 'Tops' },
 		{ href: '/pages/products?category=Calça', label: 'Calças' },

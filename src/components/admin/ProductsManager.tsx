@@ -1,32 +1,49 @@
 'use client';
 
 import type React from 'react';
-import { useState } from 'react';
-import { products as initialProducts } from '@/src/data/products';
+import { useCallback, useEffect, useState } from 'react';
 
 interface ProductVariant {
 	size: string;
 	color: string;
 	stock: number;
+	images?: string[];
 }
 
 interface Product {
-	id: number;
+	id: string; // Prisma ID is string (uuid)
 	name: string;
 	price: number;
 	originalPrice?: number;
-	category: string;
-	image: string;
+	category: string; // In form we use string, but from API it might be object. We will handle mapping.
+	image: string; // computed for display
 	images: string[];
 	description: string;
-	stock: number;
+	stock: number; // computed
 	variants: ProductVariant[];
 }
 
+interface ApiVariant {
+	size: string;
+	color: string;
+	stock: number;
+	images?: string[];
+}
+
+interface ApiProduct {
+	id: string;
+	name: string;
+	price: number;
+	category?: { name: string };
+	description?: string;
+	variants: ApiVariant[];
+}
+
 export default function ProductsManager() {
-	const [products, setProducts] = useState<Product[]>(initialProducts);
+	const [products, setProducts] = useState<Product[]>([]);
 	const [isEditing, setIsEditing] = useState<Product | null>(null);
 	const [isAdding, setIsAdding] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
 	// Form states
 	const [formData, setFormData] = useState<Omit<Product, 'id'>>({
@@ -48,9 +65,66 @@ export default function ProductsManager() {
 		stock: 0,
 	});
 
-	const handleDelete = (id: number) => {
+	const fetchProducts = useCallback(async () => {
+		setIsLoading(true);
+		try {
+			const res = await fetch('/api/products');
+			if (!res.ok) throw new Error('Failed to fetch products');
+			const data = await res.json();
+
+			// Transform API data to match our component state structure
+			const transformedProducts: Product[] = data.map((p: ApiProduct) => {
+				const images =
+					p.variants.length > 0 && p.variants[0].images
+						? p.variants[0].images
+						: ['/Logo.jpg'];
+				return {
+					id: p.id,
+					name: p.name,
+					price: Number(p.price),
+					originalPrice: 0, // Not in schema yet
+					category: p.category?.name || '',
+					description: p.description || '',
+					stock: p.variants.reduce(
+						(acc: number, v: ApiVariant) => acc + (v.stock || 0),
+						0,
+					),
+					variants: p.variants.map((v: ApiVariant) => ({
+						size: v.size,
+						color: v.color,
+						stock: v.stock,
+						images: v.images,
+					})),
+					image: images[0] || '/Logo.jpg',
+					images: images,
+				};
+			});
+			setProducts(transformedProducts);
+		} catch (error) {
+			console.error(error);
+			alert('Erro ao carregar produtos');
+		} finally {
+			setIsLoading(false);
+		}
+	}, []);
+
+	// Fetch products on mount
+	useEffect(() => {
+		fetchProducts();
+	}, [fetchProducts]);
+
+	const handleDelete = async (id: string) => {
 		if (confirm('Tem certeza que deseja remover este produto?')) {
-			setProducts(products.filter((p) => p.id !== id));
+			try {
+				const res = await fetch(`/api/products/${id}`, {
+					method: 'DELETE',
+				});
+				if (!res.ok) throw new Error('Failed to delete');
+				setProducts(products.filter((p) => p.id !== id));
+			} catch (error) {
+				console.error(error);
+				alert('Erro ao deletar produto');
+			}
 		}
 	};
 
@@ -86,7 +160,7 @@ export default function ProductsManager() {
 		});
 	};
 
-	const handleSave = (e: React.FormEvent) => {
+	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const totalStock = formData.variants.reduce(
 			(acc, curr) => acc + curr.stock,
@@ -98,17 +172,29 @@ export default function ProductsManager() {
 			image: formData.images[0] || '/Logo.jpg', // Ensure main image matches first of gallery
 		};
 
-		if (isEditing) {
-			setProducts(
-				products.map((p) =>
-					p.id === isEditing.id ? { ...p, ...productData } : p,
-				),
-			);
-			setIsEditing(null);
-		} else {
-			const newId = Math.max(...products.map((p) => p.id), 0) + 1;
-			setProducts([...products, { id: newId, ...productData }]);
-			setIsAdding(false);
+		try {
+			if (isEditing) {
+				const res = await fetch(`/api/products/${isEditing.id}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(productData),
+				});
+				if (!res.ok) throw new Error('Failed to update');
+				await fetchProducts(); // Refresh list
+				setIsEditing(null);
+			} else {
+				const res = await fetch('/api/products', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(productData),
+				});
+				if (!res.ok) throw new Error('Failed to create');
+				await fetchProducts(); // Refresh list
+				setIsAdding(false);
+			}
+		} catch (error) {
+			console.error(error);
+			alert('Erro ao salvar produto');
 		}
 	};
 
@@ -498,64 +584,82 @@ export default function ProductsManager() {
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100">
-							{products.map((product) => (
-								<tr key={product.id} className="hover:bg-gray-50">
-									<td className="px-6 py-4">
-										<div className="relative">
-											{/* biome-ignore lint/performance/noImgElement: Simple table thumbnail */}
-											<img
-												src={product.images ? product.images[0] : product.image}
-												alt={product.name}
-												className="w-10 h-10 object-cover rounded-md border"
-											/>
-											{product.images && product.images.length > 1 && (
-												<span className="absolute -top-1 -right-1 bg-[#3C5F2D] text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">
-													{product.images.length}
-												</span>
-											)}
-										</div>
-									</td>
-									<td className="px-6 py-4 font-medium text-gray-900">
-										<div>{product.name}</div>
-										<div className="text-xs text-gray-500">
-											{product.variants
-												?.map((v) => `${v.size}/${v.color}`)
-												.join(', ')}
-										</div>
-									</td>
-									<td className="px-6 py-4 text-gray-500">
-										{product.category}
-									</td>
-									<td className="px-6 py-4 text-gray-900">
-										R$ {product.price.toFixed(2)}
-									</td>
-									<td className="px-6 py-4">
-										{product.stock === 0 ? (
-											<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-												Esgotado
-											</span>
-										) : (
-											<span className="text-gray-900">{product.stock} un.</span>
-										)}
-									</td>
-									<td className="px-6 py-4 text-right space-x-2">
-										<button
-											type="button"
-											onClick={() => handleEdit(product)}
-											className="text-blue-600 hover:text-blue-800 font-medium"
-										>
-											Editar
-										</button>
-										<button
-											type="button"
-											onClick={() => handleDelete(product.id)}
-											className="text-red-600 hover:text-red-800 font-medium"
-										>
-											Remover
-										</button>
+							{isLoading ? (
+								<tr>
+									<td colSpan={6} className="px-6 py-4 text-center">
+										Carregando...
 									</td>
 								</tr>
-							))}
+							) : products.length === 0 ? (
+								<tr>
+									<td colSpan={6} className="px-6 py-4 text-center">
+										Nenhum produto encontrado.
+									</td>
+								</tr>
+							) : (
+								products.map((product) => (
+									<tr key={product.id} className="hover:bg-gray-50">
+										<td className="px-6 py-4">
+											<div className="relative">
+												{/* biome-ignore lint/performance/noImgElement: Simple table thumbnail */}
+												<img
+													src={
+														product.images ? product.images[0] : product.image
+													}
+													alt={product.name}
+													className="w-10 h-10 object-cover rounded-md border"
+												/>
+												{product.images && product.images.length > 1 && (
+													<span className="absolute -top-1 -right-1 bg-[#3C5F2D] text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">
+														{product.images.length}
+													</span>
+												)}
+											</div>
+										</td>
+										<td className="px-6 py-4 font-medium text-gray-900">
+											<div>{product.name}</div>
+											<div className="text-xs text-gray-500">
+												{product.variants
+													?.map((v) => `${v.size}/${v.color}`)
+													.join(', ')}
+											</div>
+										</td>
+										<td className="px-6 py-4 text-gray-500">
+											{product.category}
+										</td>
+										<td className="px-6 py-4 text-gray-900">
+											R$ {product.price.toFixed(2)}
+										</td>
+										<td className="px-6 py-4">
+											{product.stock === 0 ? (
+												<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+													Esgotado
+												</span>
+											) : (
+												<span className="text-gray-900">
+													{product.stock} un.
+												</span>
+											)}
+										</td>
+										<td className="px-6 py-4 text-right space-x-2">
+											<button
+												type="button"
+												onClick={() => handleEdit(product)}
+												className="text-blue-600 hover:text-blue-800 font-medium"
+											>
+												Editar
+											</button>
+											<button
+												type="button"
+												onClick={() => handleDelete(product.id)}
+												className="text-red-600 hover:text-red-800 font-medium"
+											>
+												Remover
+											</button>
+										</td>
+									</tr>
+								))
+							)}
 						</tbody>
 					</table>
 				</div>

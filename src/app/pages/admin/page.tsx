@@ -1,16 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import DashboardStats from '@/src/components/admin/DashboardStats';
 import Overview from '@/src/components/admin/Overview';
 import ProductsManager from '@/src/components/admin/ProductsManager';
 import RecentSales from '@/src/components/admin/RecentSales';
 import UsersManager from '@/src/components/admin/UsersManager';
+import { supabase } from '@/src/lib/supabase';
 
 export default function AdminPage() {
 	const [activeTab, setActiveTab] = useState<
 		'dashboard' | 'products' | 'users'
 	>('dashboard');
+	const [loading, setLoading] = useState(true);
+	const router = useRouter();
+
+	useEffect(() => {
+		const checkAdmin = async () => {
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+
+			if (user?.email !== 'useoifit@gmail.com') {
+				router.push('/');
+			} else {
+				setLoading(false);
+			}
+		};
+
+		checkAdmin();
+	}, [router]);
+
+	if (loading) {
+		return (
+			<div className="flex h-screen items-center justify-center">
+				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3C5F2D]"></div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex-1 space-y-4 p-4 md:p-8 md:px-24 pt-24 pb-12">
