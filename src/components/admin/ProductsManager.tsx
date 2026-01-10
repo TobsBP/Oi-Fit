@@ -23,6 +23,19 @@ interface Product {
 	variants: ProductVariant[];
 }
 
+// Interface to handle form inputs as strings to avoid NaN issues
+interface ProductFormState {
+	name: string;
+	price: string;
+	originalPrice: string;
+	category: string;
+	image: string;
+	images: string[];
+	description: string;
+	stock: number;
+	variants: ProductVariant[];
+}
+
 interface ApiVariant {
 	size: string;
 	color: string;
@@ -46,10 +59,10 @@ export default function ProductsManager() {
 	const [isLoading, setIsLoading] = useState(false);
 
 	// Form states
-	const [formData, setFormData] = useState<Omit<Product, 'id'>>({
+	const [formData, setFormData] = useState<ProductFormState>({
 		name: '',
-		price: 0,
-		originalPrice: 0,
+		price: '',
+		originalPrice: '',
 		category: '',
 		image: '/Logo.jpg',
 		images: ['/Logo.jpg'],
@@ -57,6 +70,11 @@ export default function ProductsManager() {
 		stock: 0,
 		variants: [],
 	});
+
+	// Pending images to be uploaded
+	const [pendingImages, setPendingImages] = useState<File[]>([]);
+	// Preview URLs for pending images (to avoid re-reading files)
+	const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
 	// State for new variant input
 	const [newVariant, setNewVariant] = useState<ProductVariant>({
@@ -132,8 +150,8 @@ export default function ProductsManager() {
 		setIsEditing(product);
 		setFormData({
 			name: product.name,
-			price: product.price,
-			originalPrice: product.originalPrice || 0,
+			price: String(product.price),
+			originalPrice: String(product.originalPrice || ''),
 			category: product.category,
 			image: product.image,
 			images: product.images || [product.image],
@@ -141,6 +159,8 @@ export default function ProductsManager() {
 			stock: product.stock || 0,
 			variants: product.variants || [],
 		});
+		setPendingImages([]);
+		setPreviewUrls([]);
 		setIsAdding(false);
 	};
 
@@ -149,8 +169,8 @@ export default function ProductsManager() {
 		setIsEditing(null);
 		setFormData({
 			name: '',
-			price: 0,
-			originalPrice: 0,
+			price: '',
+			originalPrice: '',
 			category: '',
 			image: '/Logo.jpg',
 			images: ['/Logo.jpg'],
@@ -158,21 +178,78 @@ export default function ProductsManager() {
 			stock: 0,
 			variants: [],
 		});
+		setPendingImages([]);
+		setPreviewUrls([]);
+	};
+
+	const uploadImageToCloudinary = async (file: File): Promise<string> => {
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const response = await fetch('/api/upload', {
+			method: 'POST',
+			body: formData,
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			throw new Error(errorData.error || 'Upload failed');
+		}
+
+		const data = await response.json();
+		return data.url;
 	};
 
 	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
-		const totalStock = formData.variants.reduce(
-			(acc, curr) => acc + curr.stock,
-			0,
-		);
-		const productData = {
-			...formData,
-			stock: totalStock, // Update stock based on variants
-			image: formData.images[0] || '/Logo.jpg', // Ensure main image matches first of gallery
-		};
+		setIsLoading(true);
 
 		try {
+			// 1. Upload pending images
+			const uploadedUrls: string[] = [];
+			for (const file of pendingImages) {
+				const url = await uploadImageToCloudinary(file);
+				uploadedUrls.push(url);
+			}
+
+			// 2. Merge existing images with new uploaded URLs
+			// Filter out preview URLs (which are blob:...) if they were mixed in formData.images
+			// But here we kept them separate.
+			// formData.images contains EXISTING URLs (from DB)
+			// We need to add the new ones.
+			const allImages = [...formData.images, ...uploadedUrls].filter(
+				(img) => !img.startsWith('blob:'),
+			);
+
+			// If no images at all, use logo
+			if (allImages.length === 0) allImages.push('/Logo.jpg');
+
+			const totalStock = formData.variants.reduce(
+				(acc, curr) => acc + curr.stock,
+				0,
+			);
+
+			// Convert strings back to numbers for API
+			const priceNum = parseFloat(formData.price.replace(',', '.'));
+			const originalPriceNum = parseFloat(
+				formData.originalPrice.replace(',', '.'),
+			);
+
+			if (Number.isNaN(priceNum)) {
+				alert('O preço deve ser um número válido');
+				setIsLoading(false);
+				return;
+			}
+
+			const productData = {
+				...formData,
+				price: priceNum,
+				originalPrice: Number.isNaN(originalPriceNum) ? 0 : originalPriceNum,
+				stock: totalStock,
+				image: allImages[0],
+				images: allImages,
+			};
+
 			if (isEditing) {
 				const res = await fetch(`/api/products/${isEditing.id}`, {
 					method: 'PUT',
@@ -192,38 +269,50 @@ export default function ProductsManager() {
 				await fetchProducts(); // Refresh list
 				setIsAdding(false);
 			}
+			setPendingImages([]);
+			setPreviewUrls([]);
 		} catch (error) {
 			console.error(error);
-			alert('Erro ao salvar produto');
+			alert('Erro ao salvar produto.');
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
 	const handleCancel = () => {
 		setIsEditing(null);
 		setIsAdding(false);
+		setPendingImages([]);
+		setPreviewUrls([]);
 	};
 
 	const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = e.target.files;
 		if (files) {
-			Array.from(files).forEach((file) => {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					setFormData((prev) => ({
-						...prev,
-						images: [...prev.images, reader.result as string],
-					}));
-				};
-				reader.readAsDataURL(file);
-			});
+			const newFiles = Array.from(files);
+			const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+
+			setPendingImages((prev) => [...prev, ...newFiles]);
+			setPreviewUrls((prev) => [...prev, ...newPreviews]);
 		}
 	};
 
 	const removeImage = (index: number) => {
-		setFormData((prev) => ({
-			...prev,
-			images: prev.images.filter((_, i) => i !== index),
-		}));
+		// Calculate the split point between existing images and pending images
+		const existingCount = formData.images.length;
+
+		if (index < existingCount) {
+			// Removing an existing image
+			setFormData((prev) => ({
+				...prev,
+				images: prev.images.filter((_, i) => i !== index),
+			}));
+		} else {
+			// Removing a pending image
+			const pendingIndex = index - existingCount;
+			setPendingImages((prev) => prev.filter((_, i) => i !== pendingIndex));
+			setPreviewUrls((prev) => prev.filter((_, i) => i !== pendingIndex));
+		}
 	};
 
 	const addVariant = () => {
@@ -246,6 +335,9 @@ export default function ProductsManager() {
 	};
 
 	if (isEditing || isAdding) {
+		// Combined list for display: Existing Images + Pending Previews
+		const displayImages = [...formData.images, ...previewUrls];
+
 		return (
 			<div className="bg-white p-6 rounded-xl border border-[#3C5F2D]/20 shadow-sm">
 				<h3 className="text-xl font-bold text-[#3C5F2D] mb-4">
@@ -288,7 +380,7 @@ export default function ProductsManager() {
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										price: parseFloat(e.target.value),
+										price: e.target.value,
 									})
 								}
 							/>
@@ -309,7 +401,7 @@ export default function ProductsManager() {
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										originalPrice: parseFloat(e.target.value),
+										originalPrice: e.target.value,
 									})
 								}
 							/>
@@ -463,7 +555,7 @@ export default function ProductsManager() {
 							id="product-images"
 							className="mt-2 grid grid-cols-3 md:grid-cols-5 gap-4"
 						>
-							{formData.images.map((img, index) => (
+							{displayImages.map((img, index) => (
 								<div
 									key={img}
 									className="relative aspect-square border-2 border-gray-200 rounded-lg overflow-hidden group"
@@ -547,9 +639,10 @@ export default function ProductsManager() {
 						</button>
 						<button
 							type="submit"
-							className="px-4 py-2 text-sm font-medium text-white bg-[#3C5F2D] rounded-md hover:bg-[#2d4721]"
+							disabled={isLoading}
+							className={`px-4 py-2 text-sm font-medium text-white bg-[#3C5F2D] rounded-md hover:bg-[#2d4721] ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
 						>
-							Salvar
+							{isLoading ? 'Salvando...' : 'Salvar'}
 						</button>
 					</div>
 				</form>
