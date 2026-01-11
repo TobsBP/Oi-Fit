@@ -3,9 +3,15 @@
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import AddressForm from '@/src/components/profile/AddressForm';
 import CheckoutForm from '@/src/components/purchase/CheckoutForm';
 import { useCart } from '@/src/context/CartContext';
+import { PREDEFINED_CITIES } from '@/src/data/cities';
+import { supabase } from '@/src/lib/supabase';
+import type { Address } from '@/src/types/address';
+import type { User } from '@/src/types/user';
 
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY;
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
@@ -13,18 +19,63 @@ const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 export default function PurchasePage() {
 	const [clientSecret, setClientSecret] = useState('');
 	const { items, totalPrice } = useCart();
+	const [user, setUser] = useState<User | null>(null);
+	const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+	const [showAddressForm, setShowAddressForm] = useState(false);
+	const [loadingUser, setLoadingUser] = useState(true);
+	const router = useRouter();
+
+	const freight = selectedAddress
+		? PREDEFINED_CITIES.find((c) => c.name === selectedAddress.city)?.freight ||
+			0
+		: 0;
+	const totalWithFreight = totalPrice + freight;
 
 	useEffect(() => {
-		if (items.length === 0) return;
+		const fetchUser = async () => {
+			try {
+				const {
+					data: { session },
+				} = await supabase.auth.getSession();
+				if (!session) {
+					router.push('/pages/login');
+					return;
+				}
+
+				const response = await fetch('/api/user', {
+					headers: { Authorization: `Bearer ${session.access_token}` },
+				});
+
+				if (response.ok) {
+					const userData = await response.json();
+					setUser(userData);
+					if (userData.addresses && userData.addresses.length > 0) {
+						setSelectedAddress(userData.addresses[0]);
+					} else {
+						setShowAddressForm(true);
+					}
+				}
+			} catch (error) {
+				console.error('Error fetching user:', error);
+			} finally {
+				setLoadingUser(false);
+			}
+		};
+
+		fetchUser();
+	}, [router]);
+
+	useEffect(() => {
+		if (items.length === 0 || !selectedAddress) return;
 
 		fetch('/api/payment', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ items }),
+			body: JSON.stringify({ items, cityName: selectedAddress.city }),
 		})
 			.then((res) => res.json())
 			.then((data) => setClientSecret(data.clientSecret));
-	}, [items]);
+	}, [items, selectedAddress]);
 
 	const appearance = {
 		theme: 'stripe' as const,
@@ -41,6 +92,14 @@ export default function PurchasePage() {
 		return (
 			<div className="min-h-screen flex items-center justify-center text-red-600 font-bold">
 				Erro: Chave pública do Stripe não configurada.
+			</div>
+		);
+	}
+
+	if (loadingUser) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-gray-50">
+				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3C5F2D]" />
 			</div>
 		);
 	}
@@ -71,12 +130,22 @@ export default function PurchasePage() {
 							Finalizar Compra
 						</h1>
 						{items.length > 0 && (
-							<p className="text-gray-600 text-center mb-4">
-								Total a pagar:{' '}
-								<span className="font-bold text-[#3C5F2D]">
-									R$ {totalPrice.toFixed(2).replace('.', ',')}
-								</span>
-							</p>
+							<div className="text-gray-600 text-center mb-4 w-full">
+								<div className="flex justify-between text-sm">
+									<span>Subtotal:</span>
+									<span>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+								</div>
+								<div className="flex justify-between text-sm">
+									<span>Frete:</span>
+									<span>R$ {freight.toFixed(2).replace('.', ',')}</span>
+								</div>
+								<div className="flex justify-between font-bold text-[#3C5F2D] text-lg mt-2 pt-2 border-t">
+									<span>Total:</span>
+									<span>
+										R$ {totalWithFreight.toFixed(2).replace('.', ',')}
+									</span>
+								</div>
+							</div>
 						)}
 					</div>
 
@@ -84,12 +153,87 @@ export default function PurchasePage() {
 						<div className="text-center text-gray-500">
 							Seu carrinho está vazio.
 						</div>
+					) : showAddressForm ? (
+						<div className="mb-6">
+							<h2 className="text-lg font-bold text-[#3C5F2D] mb-4">
+								Cadastrar Endereço de Entrega
+							</h2>
+							<AddressForm
+								onSuccess={async () => {
+									setShowAddressForm(false);
+									try {
+										const {
+											data: { session },
+										} = await supabase.auth.getSession();
+										if (session) {
+											const response = await fetch('/api/user', {
+												headers: {
+													Authorization: `Bearer ${session.access_token}`,
+												},
+											});
+											if (response.ok) {
+												const userData = await response.json();
+												setUser(userData);
+												if (
+													userData.addresses &&
+													userData.addresses.length > 0
+												) {
+													setSelectedAddress(userData.addresses[0]);
+												}
+											}
+										}
+									} catch (e) {
+										console.error(e);
+									}
+								}}
+								onCancel={() => {
+									if (user?.addresses?.length) {
+										setShowAddressForm(false);
+									}
+								}}
+							/>
+						</div>
 					) : (
-						clientSecret && (
-							<Elements options={options} stripe={stripePromise}>
-								<CheckoutForm />
-							</Elements>
-						)
+						<div className="mb-6 space-y-4">
+							<div className="p-4 border-2 border-[#3C5F2D] rounded-2xl bg-[#f7faf5]">
+								<div className="flex items-start justify-between">
+									<div>
+										<h3 className="text-sm font-bold text-[#3C5F2D] mb-1">
+											Entregar em:
+										</h3>
+										{selectedAddress ? (
+											<div className="text-sm text-gray-700">
+												<p>
+													{selectedAddress.street}, {selectedAddress.number}
+												</p>
+												<p>{selectedAddress.neighborhood}</p>
+												<p>
+													{selectedAddress.city} - {selectedAddress.state}
+												</p>
+												<p>{selectedAddress.zipCode}</p>
+											</div>
+										) : (
+											<p className="text-sm text-gray-500">
+												Selecione um endereço
+											</p>
+										)}
+									</div>
+									<button
+										type="button"
+										onClick={() => setShowAddressForm(true)}
+										className="text-xs text-[#3C5F2D] font-bold underline hover:text-[#2d4722]"
+									>
+										Trocar
+									</button>
+								</div>
+							</div>
+
+							{clientSecret && selectedAddress && (
+								<Elements options={options} stripe={stripePromise}>
+									<CheckoutForm />
+								</Elements>
+							)}
+						</div>
 					)}
 				</div>
 			</div>
