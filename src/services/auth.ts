@@ -1,10 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Register } from '../types/auth';
-
-interface Router {
-	push: (url: string) => void;
-	refresh: () => void;
-}
+import type { Register, Router } from '../types/auth';
 
 export async function signUp(
 	data: Register,

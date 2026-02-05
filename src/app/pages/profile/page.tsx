@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AddressForm from '@/src/components/profile/AddressForm';
-import { supabase } from '@/src/lib/supabase';
+import { deleteAddress } from '@/src/services/addresses';
+import { getUser } from '@/src/services/users';
 import type { User } from '@/src/types/user';
 import { getStatusColor } from '@/src/utils/StatusColor';
 import { translateStatus } from '@/src/utils/TranslateStatus';
@@ -21,30 +22,12 @@ export default function ProfilePage() {
 
 	const fetchUserData = useCallback(async () => {
 		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-
-			if (!session) {
+			const data = await getUser();
+			if (!data) {
 				router.push('/pages/login');
 				return;
 			}
-
-			const response = await fetch('/api/user', {
-				headers: {
-					Authorization: `Bearer ${session.access_token}`,
-				},
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				setUserData(data);
-			} else {
-				if (response.status === 401) {
-					router.push('/pages/login');
-				}
-				console.error('Failed to fetch user data');
-			}
+			setUserData(data);
 		} catch (error) {
 			console.error('Error:', error);
 		} finally {
@@ -61,26 +44,11 @@ export default function ProfilePage() {
 
 		setDeletingAddressId(addressId);
 		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) return;
-
-			const response = await fetch(`/api/user/address/${addressId}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${session.access_token}`,
-				},
-			});
-
-			if (response.ok) {
-				fetchUserData();
-			} else {
-				console.error('Failed to delete address');
-				alert('Erro ao excluir endereço');
-			}
+			await deleteAddress(addressId);
+			fetchUserData();
 		} catch (error) {
 			console.error('Error deleting address:', error);
+			alert('Erro ao excluir endereço');
 		} finally {
 			setDeletingAddressId(null);
 		}

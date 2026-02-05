@@ -14,3 +14,8 @@ export const registerSchema = z.object({
 
 export type Login = z.infer<typeof loginSchema>;
 export type Register = z.infer<typeof registerSchema>;
+
+export type Router = {
+	push: (url: string) => void;
+	refresh: () => void;
+};

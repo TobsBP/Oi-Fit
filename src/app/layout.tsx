@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import QueryProvider from '@/src/components/providers/QueryProvider';
 import BackgroundFruits from '@/src/components/ui/BackgroundFruits';
 import CartSidebar from '@/src/components/ui/Cart/CartSidebar';
 import Footer from '@/src/components/ui/Footer/Footer';
@@ -31,15 +32,17 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<CartProvider>
-					<BackgroundFruits />
-					<div className="relative z-10 flex flex-col min-h-screen">
-						<NavBar />
-						<CartSidebar />
-						<main className="flex-1">{children}</main>
-						<Footer />
-					</div>
-				</CartProvider>
+				<QueryProvider>
+					<CartProvider>
+						<BackgroundFruits />
+						<div className="relative z-10 flex flex-col min-h-screen">
+							<NavBar />
+							<CartSidebar />
+							<main className="flex-1">{children}</main>
+							<Footer />
+						</div>
+					</CartProvider>
+				</QueryProvider>
 			</body>
 		</html>
 	);

@@ -76,7 +76,7 @@ export default function CartSidebar() {
 							>
 								<div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden shrink-0">
 									<Image
-										src={product.image}
+										src={product.images?.[0] || '/Logo.jpg'}
 										alt={product.name}
 										fill
 										className="object-cover"

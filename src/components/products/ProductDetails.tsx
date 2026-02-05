@@ -2,72 +2,33 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import AddToCartButton from '@/src/components/products/AddToCartButton';
 
-interface ProductVariant {
-	size: string;
-	color: string;
-	stock: number;
-}
-
 interface Product {
-	id: string | number;
+	id: string;
 	name: string;
 	price: number;
-	originalPrice?: number;
+	discount: number;
 	category: string;
-	image: string;
-	images?: string[];
-	description: string;
+	size: string;
 	stock: number;
-	variants?: ProductVariant[];
+	images: string[];
+	description: string;
+	isActive: boolean;
 }
 
 export default function ProductDetails({ product }: { product: Product }) {
 	const images =
 		product.images && product.images.length > 0
 			? product.images
-			: [product.image];
-	const [selectedImage, setSelectedImage] = useState(images[0]);
+			: ['/Logo.jpg'];
+	const [selectedImage, setSelectedImage] = useState(images[0] || '/Logo.jpg');
 
-	const [selectedSize, setSelectedSize] = useState<string>('');
-	const [selectedColor, setSelectedColor] = useState<string>('');
+	const isOutOfStock = product.stock === 0;
 
-	// Derived state
-	const variants = product.variants || [];
-	const sizes = Array.from(new Set(variants.map((v) => v.size))).sort();
-	const colors = Array.from(new Set(variants.map((v) => v.color))).sort();
-
-	// Reset selection when product changes (optional)
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset selection when product changes
-	useEffect(() => {
-		if (sizes.length > 0) setSelectedSize('');
-		if (colors.length > 0) setSelectedColor('');
-	}, [product.id, sizes.length, colors.length]);
-
-	const getStockForSelection = () => {
-		if (!product.variants || product.variants.length === 0)
-			return product.stock;
-		if (!selectedSize || !selectedColor) return 0; // Or return total stock? No, strictly variant stock.
-
-		const variant = variants.find(
-			(v) => v.size === selectedSize && v.color === selectedColor,
-		);
-		return variant ? variant.stock : 0;
-	};
-
-	const currentStock =
-		product.variants && product.variants.length > 0
-			? getStockForSelection()
-			: product.stock;
-
-	const isSelectionComplete =
-		product.variants && product.variants.length > 0
-			? !!selectedSize && !!selectedColor
-			: true;
-
-	const isOutOfStock = currentStock === 0;
+	const discountedPrice =
+		product.discount > 0 ? product.price * (1 - product.discount / 100) : null;
 
 	return (
 		<div className="min-h-screen text-black p-6 pt-28">
@@ -81,11 +42,11 @@ export default function ProductDetails({ product }: { product: Product }) {
 									src={selectedImage}
 									alt={product.name}
 									fill
-									className={`object-cover transition-all duration-300 ${product.stock === 0 ? 'grayscale' : ''}`}
+									className={`object-cover transition-all duration-300 ${isOutOfStock ? 'grayscale' : ''}`}
 									sizes="(max-width: 768px) 100vw, 50vw"
 									priority
 								/>
-								{product.stock === 0 && (
+								{isOutOfStock && (
 									<div className="absolute inset-0 bg-black/40 flex items-center justify-center">
 										<span className="bg-red-600 text-white px-6 py-3 rounded-full font-bold uppercase tracking-wider text-lg shadow-xl">
 											Esgotado
@@ -134,81 +95,42 @@ export default function ProductDetails({ product }: { product: Product }) {
 
 							<div className="flex flex-col mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
 								<div className="flex flex-col mb-2">
-									{product.originalPrice &&
-										product.originalPrice > product.price && (
-											<span className="text-xl text-gray-400 line-through">
-												R$ {product.originalPrice.toFixed(2)}
-											</span>
-										)}
+									{discountedPrice && (
+										<span className="text-xl text-gray-400 line-through">
+											R$ {product.price.toFixed(2)}
+										</span>
+									)}
 									<p className="text-4xl font-bold text-[#3C5F2D]">
-										R$ {product.price.toFixed(2)}
+										R${' '}
+										{discountedPrice
+											? discountedPrice.toFixed(2)
+											: product.price.toFixed(2)}
 									</p>
 								</div>
 
 								{/* Stock Display */}
-								{currentStock > 0 ? (
+								{product.stock > 0 ? (
 									<div className="flex items-center gap-2 text-green-600 font-medium text-sm">
 										<div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-										Em estoque: {currentStock} unidades
+										Em estoque: {product.stock} unidades
 									</div>
 								) : (
 									<p className="text-sm text-red-600 font-bold uppercase flex items-center gap-2">
 										<span className="w-2 h-2 rounded-full bg-red-600"></span>
-										{isSelectionComplete
-											? 'Produto Esgotado'
-											: 'Selecione as opções'}
+										Produto Esgotado
 									</p>
 								)}
 							</div>
 
-							{/* Variants Selectors */}
-							{product.variants && product.variants.length > 0 && (
-								<div className="space-y-6 mb-8">
-									{/* Size Selector */}
-									<div>
-										<h3 className="text-sm font-bold text-gray-900 mb-3">
-											Tamanho
-										</h3>
-										<div className="flex flex-wrap gap-3">
-											{sizes.map((size) => (
-												<button
-													type="button"
-													key={size}
-													onClick={() => setSelectedSize(size)}
-													className={`w-12 h-12 rounded-lg border-2 flex items-center justify-center font-bold transition-all ${
-														selectedSize === size
-															? 'border-[#3C5F2D] bg-[#3C5F2D] text-white shadow-lg scale-105'
-															: 'border-gray-200 text-gray-600 hover:border-[#3C5F2D] hover:text-[#3C5F2D]'
-													}`}
-												>
-													{size}
-												</button>
-											))}
-										</div>
-									</div>
-
-									{/* Color Selector */}
-									<div>
-										<h3 className="text-sm font-bold text-gray-900 mb-3">
-											Cor
-										</h3>
-										<div className="flex flex-wrap gap-3">
-											{colors.map((color) => (
-												<button
-													type="button"
-													key={color}
-													onClick={() => setSelectedColor(color)}
-													className={`px-4 py-2 rounded-lg border-2 font-bold transition-all ${
-														selectedColor === color
-															? 'border-[#3C5F2D] bg-[#3C5F2D] text-white shadow-lg scale-105'
-															: 'border-gray-200 text-gray-600 hover:border-[#3C5F2D] hover:text-[#3C5F2D]'
-													}`}
-												>
-													{color}
-												</button>
-											))}
-										</div>
-									</div>
+							{/* Size Display */}
+							{product.size && (
+								<div className="mb-8">
+									<h3 className="text-sm font-bold text-gray-900 mb-3">
+										Tamanho
+									</h3>
+									<span className="inline-flex items-center justify-center w-12 h-12 rounded-lg border-2 border-[#3C5F2D] bg-[#3C5F2D] text-white font-bold shadow-lg">
+										{product.size}
+									</span>
 								</div>
 							)}
 
@@ -220,12 +142,11 @@ export default function ProductDetails({ product }: { product: Product }) {
 							</div>
 
 							<div className="mt-auto space-y-4">
-								{!isOutOfStock && isSelectionComplete ? (
+								{!isOutOfStock ? (
 									<AddToCartButton
 										product={product}
 										className="shadow-xl shadow-[#3C5F2D]/20 transform hover:-translate-y-1"
-										selectedSize={selectedSize}
-										selectedColor={selectedColor}
+										selectedSize={product.size}
 									/>
 								) : (
 									<button
@@ -233,9 +154,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 										disabled
 										className="w-full bg-gray-200 text-gray-400 py-4 rounded-xl text-lg font-bold cursor-not-allowed border-2 border-gray-200"
 									>
-										{!isSelectionComplete
-											? 'Selecione tamanho e cor'
-											: 'Indisponível no momento'}
+										Indisponível no momento
 									</button>
 								)}
 

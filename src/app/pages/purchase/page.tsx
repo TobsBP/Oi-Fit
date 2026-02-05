@@ -9,7 +9,8 @@ import AddressForm from '@/src/components/profile/AddressForm';
 import CheckoutForm from '@/src/components/purchase/CheckoutForm';
 import { useCart } from '@/src/context/CartContext';
 import { PREDEFINED_CITIES } from '@/src/data/cities';
-import { supabase } from '@/src/lib/supabase';
+import { createPaymentIntent } from '@/src/services/payment';
+import { getUser } from '@/src/services/users';
 import type { Address } from '@/src/types/address';
 import type { User } from '@/src/types/user';
 
@@ -22,6 +23,7 @@ export default function PurchasePage() {
 	const [user, setUser] = useState<User | null>(null);
 	const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 	const [showAddressForm, setShowAddressForm] = useState(false);
+	const [showAddressList, setShowAddressList] = useState(false);
 	const [loadingUser, setLoadingUser] = useState(true);
 	const router = useRouter();
 
@@ -32,28 +34,18 @@ export default function PurchasePage() {
 	const totalWithFreight = totalPrice + freight;
 
 	useEffect(() => {
-		const fetchUser = async () => {
+		const fetchUserData = async () => {
 			try {
-				const {
-					data: { session },
-				} = await supabase.auth.getSession();
-				if (!session) {
+				const userData = await getUser();
+				if (!userData) {
 					router.push('/pages/login');
 					return;
 				}
-
-				const response = await fetch('/api/user', {
-					headers: { Authorization: `Bearer ${session.access_token}` },
-				});
-
-				if (response.ok) {
-					const userData = await response.json();
-					setUser(userData);
-					if (userData.addresses && userData.addresses.length > 0) {
-						setSelectedAddress(userData.addresses[0]);
-					} else {
-						setShowAddressForm(true);
-					}
+				setUser(userData);
+				if (userData.addresses && userData.addresses.length > 0) {
+					setSelectedAddress(userData.addresses[0]);
+				} else {
+					setShowAddressForm(true);
 				}
 			} catch (error) {
 				console.error('Error fetching user:', error);
@@ -62,19 +54,13 @@ export default function PurchasePage() {
 			}
 		};
 
-		fetchUser();
+		fetchUserData();
 	}, [router]);
 
 	useEffect(() => {
 		if (items.length === 0 || !selectedAddress) return;
 
-		fetch('/api/payment', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ items, cityName: selectedAddress.city }),
-		})
-			.then((res) => res.json())
-			.then((data) => setClientSecret(data.clientSecret));
+		createPaymentIntent(items, selectedAddress.city).then(setClientSecret);
 	}, [items, selectedAddress]);
 
 	const appearance = {
@@ -162,24 +148,11 @@ export default function PurchasePage() {
 								onSuccess={async () => {
 									setShowAddressForm(false);
 									try {
-										const {
-											data: { session },
-										} = await supabase.auth.getSession();
-										if (session) {
-											const response = await fetch('/api/user', {
-												headers: {
-													Authorization: `Bearer ${session.access_token}`,
-												},
-											});
-											if (response.ok) {
-												const userData = await response.json();
-												setUser(userData);
-												if (
-													userData.addresses &&
-													userData.addresses.length > 0
-												) {
-													setSelectedAddress(userData.addresses[0]);
-												}
+										const userData = await getUser();
+										if (userData) {
+											setUser(userData);
+											if (userData.addresses && userData.addresses.length > 0) {
+												setSelectedAddress(userData.addresses[0]);
 											}
 										}
 									} catch (e) {
@@ -220,13 +193,50 @@ export default function PurchasePage() {
 									</div>
 									<button
 										type="button"
-										onClick={() => setShowAddressForm(true)}
+										onClick={() => setShowAddressList(true)}
 										className="text-xs text-[#3C5F2D] font-bold underline hover:text-[#2d4722]"
 									>
 										Trocar
 									</button>
 								</div>
 							</div>
+
+							{showAddressList && user?.addresses && (
+								<div className="space-y-2">
+									{user.addresses.map((addr) => (
+										<button
+											key={addr.id}
+											type="button"
+											onClick={() => {
+												setSelectedAddress(addr);
+												setShowAddressList(false);
+											}}
+											className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+												selectedAddress?.id === addr.id
+													? 'border-[#3C5F2D] bg-[#f7faf5]'
+													: 'border-gray-200 hover:border-[#3C5F2D]/50'
+											}`}
+										>
+											<p className="text-sm font-medium text-gray-900">
+												{addr.street}, {addr.number}
+											</p>
+											<p className="text-xs text-gray-500">
+												{addr.neighborhood} - {addr.city}/{addr.state}
+											</p>
+										</button>
+									))}
+									<button
+										type="button"
+										onClick={() => {
+											setShowAddressList(false);
+											setShowAddressForm(true);
+										}}
+										className="w-full p-3 rounded-xl border-2 border-dashed border-gray-300 text-sm text-[#3C5F2D] font-medium hover:border-[#3C5F2D] transition-all"
+									>
+										+ Adicionar novo endereço
+									</button>
+								</div>
+							)}
 
 							{clientSecret && selectedAddress && (
 								<Elements options={options} stripe={stripePromise}>

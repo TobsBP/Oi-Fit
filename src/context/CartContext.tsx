@@ -7,9 +7,9 @@ export interface Product {
 	id: string | number;
 	name: string;
 	price: number;
-	originalPrice?: number;
+	discount?: number;
 	category: string;
-	image: string;
+	images: string[];
 	description: string;
 }
 

@@ -51,13 +51,15 @@ export default function BackgroundFruits() {
 						left: `${pos.x}%`,
 						top: `${pos.y}%`,
 						transform: `rotate(${pos.rotation}deg) scale(${pos.scale})`,
+						width: '80px',
+						height: '80px',
 					}}
 				>
 					<Image
 						src={fruitImages[pos.fruitIndex]}
 						alt=""
-						width={80}
-						height={80}
+						fill
+						sizes="80px"
 						className="object-contain"
 					/>
 				</div>

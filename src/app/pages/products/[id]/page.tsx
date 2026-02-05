@@ -1,24 +1,32 @@
+'use client';
+
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import ProductDetails from '@/src/components/products/ProductDetails';
-import prisma from '@/src/lib/prisma';
+import { useProduct } from '@/src/hooks/useProducts';
 
-export default async function ProductPage({
-	params,
-}: {
-	params: Promise<{ id: string }>;
-}) {
-	const { id } = await params;
+export default function ProductPage() {
+	const params = useParams();
+	const id = params.id as string;
+	const { product, isLoading, error } = useProduct(id);
 
-	// Fetch product directly from DB since this is a server component
-	const productData = await prisma.product.findUnique({
-		where: { id },
-		include: {
-			variants: true,
-			category: true,
-		},
-	});
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center text-[#3C5F2D]">
+				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#3C5F2D]"></div>
+			</div>
+		);
+	}
 
-	if (!productData) {
+	if (error) {
+		return (
+			<div className="min-h-screen flex items-center justify-center text-red-500">
+				<p>Erro ao carregar o produto: {error.message}</p>
+			</div>
+		);
+	}
+
+	if (!product) {
 		return (
 			<div className="min-h-screen text-black p-6 flex flex-col items-center justify-center">
 				<h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
@@ -28,44 +36,6 @@ export default async function ProductPage({
 			</div>
 		);
 	}
-
-	// Transform data to match ProductDetails expected interface
-	// We need to check what ProductDetails expects.
-	// Based on previous files, it seems to expect:
-	// interface Product {
-	// 	id: string | number;
-	// 	name: string;
-	// 	price: number;
-	// 	originalPrice?: number;
-	// 	category: string;
-	// 	image: string;
-	// 	images: string[];
-	// 	description: string;
-	// 	stock: number;
-	// 	variants: ProductVariant[];
-	// }
-
-	const images =
-		productData.variants.length > 0 && productData.variants[0].images.length > 0
-			? productData.variants[0].images
-			: ['/Logo.jpg'];
-
-	const product = {
-		id: productData.id,
-		name: productData.name,
-		price: Number(productData.price),
-		originalPrice: 0,
-		category: productData.category?.name || '',
-		description: productData.description || '',
-		stock: productData.variants.reduce((acc, v) => acc + v.stock, 0),
-		variants: productData.variants.map((v) => ({
-			size: v.size,
-			color: v.color,
-			stock: v.stock,
-		})),
-		image: images[0],
-		images: images,
-	};
 
 	return <ProductDetails product={product} />;
 }

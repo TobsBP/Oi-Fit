@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PREDEFINED_CITIES } from '@/src/data/cities';
-import { supabase } from '@/src/lib/supabase';
+import { createAddress, fetchCep } from '@/src/services/addresses';
 
 interface AddressFormProps {
 	onSuccess: () => void;
@@ -45,23 +45,19 @@ export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
 	};
 
 	const handleBlurCep = async () => {
-		const cep = formData.zipCode.replace(/\D/g, '');
-		if (cep.length === 8) {
-			try {
-				const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-				const data = await response.json();
-				if (!data.erro) {
-					setFormData((prev) => ({
-						...prev,
-						street: data.logradouro,
-						neighborhood: data.bairro,
-						city: data.localidade,
-						state: data.uf,
-					}));
-				}
-			} catch (error) {
-				console.error('Error fetching CEP:', error);
+		try {
+			const data = await fetchCep(formData.zipCode);
+			if (data) {
+				setFormData((prev) => ({
+					...prev,
+					street: data.logradouro,
+					neighborhood: data.bairro,
+					city: data.localidade,
+					state: data.uf,
+				}));
 			}
+		} catch (error) {
+			console.error('Error fetching CEP:', error);
 		}
 	};
 
@@ -71,28 +67,7 @@ export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
 		setError(null);
 
 		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) {
-				setError('Usuário não autenticado');
-				return;
-			}
-
-			const response = await fetch('/api/user/address', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify(formData),
-			});
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.error || 'Erro ao salvar endereço');
-			}
-
+			await createAddress(formData);
 			onSuccess();
 		} catch (err: unknown) {
 			if (err instanceof Error) {

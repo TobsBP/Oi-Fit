@@ -19,7 +19,8 @@ body {
 }
 
 /* Improve placeholder visibility globally */
-input::placeholder, textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
 	color: #374151 !important; /* Tailwind gray-700 - Darker for better visibility */
 	opacity: 1 !important;
 }

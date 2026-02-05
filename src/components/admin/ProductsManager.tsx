@@ -1,144 +1,56 @@
 'use client';
 
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import {
+	useCreateProduct,
+	useDeleteProduct,
+	useProducts,
+	useUpdateProduct,
+} from '@/src/hooks/useProducts';
+import { uploadImage } from '@/src/services/uploads';
+import type { Product, ProductCreate } from '@/src/types/products';
 
-interface ProductVariant {
-	size: string;
-	color: string;
-	stock: number;
-	images?: string[];
-}
-
-interface Product {
-	id: string; // Prisma ID is string (uuid)
-	name: string;
-	price: number;
-	originalPrice?: number;
-	category: string; // In form we use string, but from API it might be object. We will handle mapping.
-	image: string; // computed for display
-	images: string[];
-	description: string;
-	stock: number; // computed
-	variants: ProductVariant[];
-}
-
-// Interface to handle form inputs as strings to avoid NaN issues
-interface ProductFormState {
+interface ProductFormData {
 	name: string;
 	price: string;
-	originalPrice: string;
+	discount: string;
 	category: string;
-	image: string;
+	size: string;
+	stock: number;
 	images: string[];
 	description: string;
-	stock: number;
-	variants: ProductVariant[];
-}
-
-interface ApiVariant {
-	size: string;
-	color: string;
-	stock: number;
-	images?: string[];
-}
-
-interface ApiProduct {
-	id: string;
-	name: string;
-	price: number;
-	category?: { name: string };
-	description?: string;
-	variants: ApiVariant[];
 }
 
 export default function ProductsManager() {
-	const [products, setProducts] = useState<Product[]>([]);
+	const { products, isLoading } = useProducts();
+	const createProduct = useCreateProduct();
+	const updateProduct = useUpdateProduct();
+	const deleteProduct = useDeleteProduct();
+
 	const [isEditing, setIsEditing] = useState<Product | null>(null);
 	const [isAdding, setIsAdding] = useState(false);
-	const [isLoading, setIsLoading] = useState(false);
 
-	// Form states
-	const [formData, setFormData] = useState<ProductFormState>({
+	const [formData, setFormData] = useState<ProductFormData>({
 		name: '',
 		price: '',
-		originalPrice: '',
+		discount: '0',
 		category: '',
-		image: '/Logo.jpg',
+		size: '',
+		stock: 0,
 		images: ['/Logo.jpg'],
 		description: '',
-		stock: 0,
-		variants: [],
 	});
 
-	// Pending images to be uploaded
 	const [pendingImages, setPendingImages] = useState<File[]>([]);
-	// Preview URLs for pending images (to avoid re-reading files)
 	const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
-	// State for new variant input
-	const [newVariant, setNewVariant] = useState<ProductVariant>({
-		size: '',
-		color: '',
-		stock: 0,
-	});
-
-	const fetchProducts = useCallback(async () => {
-		setIsLoading(true);
-		try {
-			const res = await fetch('/api/products');
-			if (!res.ok) throw new Error('Failed to fetch products');
-			const data = await res.json();
-
-			// Transform API data to match our component state structure
-			const transformedProducts: Product[] = data.map((p: ApiProduct) => {
-				const images =
-					p.variants.length > 0 && p.variants[0].images
-						? p.variants[0].images
-						: ['/Logo.jpg'];
-				return {
-					id: p.id,
-					name: p.name,
-					price: Number(p.price),
-					originalPrice: 0, // Not in schema yet
-					category: p.category?.name || '',
-					description: p.description || '',
-					stock: p.variants.reduce(
-						(acc: number, v: ApiVariant) => acc + (v.stock || 0),
-						0,
-					),
-					variants: p.variants.map((v: ApiVariant) => ({
-						size: v.size,
-						color: v.color,
-						stock: v.stock,
-						images: v.images,
-					})),
-					image: images[0] || '/Logo.jpg',
-					images: images,
-				};
-			});
-			setProducts(transformedProducts);
-		} catch (error) {
-			console.error(error);
-			alert('Erro ao carregar produtos');
-		} finally {
-			setIsLoading(false);
-		}
-	}, []);
-
-	// Fetch products on mount
-	useEffect(() => {
-		fetchProducts();
-	}, [fetchProducts]);
+	const displayProducts: Product[] = (products as Product[]) || [];
 
 	const handleDelete = async (id: string) => {
 		if (confirm('Tem certeza que deseja remover este produto?')) {
 			try {
-				const res = await fetch(`/api/products/${id}`, {
-					method: 'DELETE',
-				});
-				if (!res.ok) throw new Error('Failed to delete');
-				setProducts(products.filter((p) => p.id !== id));
+				await deleteProduct.mutateAsync(id);
 			} catch (error) {
 				console.error(error);
 				alert('Erro ao deletar produto');
@@ -151,13 +63,12 @@ export default function ProductsManager() {
 		setFormData({
 			name: product.name,
 			price: String(product.price),
-			originalPrice: String(product.originalPrice || ''),
+			discount: String(product.discount || 0),
 			category: product.category,
-			image: product.image,
-			images: product.images || [product.image],
-			description: product.description,
+			size: product.size || '',
 			stock: product.stock || 0,
-			variants: product.variants || [],
+			images: product.images || ['/Logo.jpg'],
+			description: product.description,
 		});
 		setPendingImages([]);
 		setPreviewUrls([]);
@@ -170,103 +81,77 @@ export default function ProductsManager() {
 		setFormData({
 			name: '',
 			price: '',
-			originalPrice: '',
+			discount: '0',
 			category: '',
-			image: '/Logo.jpg',
+			size: '',
+			stock: 0,
 			images: ['/Logo.jpg'],
 			description: '',
-			stock: 0,
-			variants: [],
 		});
 		setPendingImages([]);
 		setPreviewUrls([]);
 	};
 
 	const uploadImageToCloudinary = async (file: File): Promise<string> => {
-		const formData = new FormData();
-		formData.append('file', file);
-
-		const response = await fetch('/api/upload', {
-			method: 'POST',
-			body: formData,
-		});
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			throw new Error(errorData.error || 'Upload failed');
-		}
-
-		const data = await response.json();
-		return data.url;
+		return uploadImage(file);
 	};
 
 	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setIsLoading(true);
 
 		try {
-			// 1. Upload pending images
 			const uploadedUrls: string[] = [];
 			for (const file of pendingImages) {
 				const url = await uploadImageToCloudinary(file);
 				uploadedUrls.push(url);
 			}
 
-			// 2. Merge existing images with new uploaded URLs
-			// Filter out preview URLs (which are blob:...) if they were mixed in formData.images
-			// But here we kept them separate.
-			// formData.images contains EXISTING URLs (from DB)
-			// We need to add the new ones.
 			const allImages = [...formData.images, ...uploadedUrls].filter(
 				(img) => !img.startsWith('blob:'),
 			);
 
-			// If no images at all, use logo
 			if (allImages.length === 0) allImages.push('/Logo.jpg');
 
-			const totalStock = formData.variants.reduce(
-				(acc, curr) => acc + curr.stock,
-				0,
-			);
-
-			// Convert strings back to numbers for API
 			const priceNum = parseFloat(formData.price.replace(',', '.'));
-			const originalPriceNum = parseFloat(
-				formData.originalPrice.replace(',', '.'),
-			);
+			const discountNum = parseFloat(formData.discount.replace(',', '.')) || 0;
 
 			if (Number.isNaN(priceNum)) {
-				alert('O preço deve ser um número válido');
-				setIsLoading(false);
+				alert('O preco deve ser um número válido');
 				return;
 			}
 
-			const productData = {
-				...formData,
-				price: priceNum,
-				originalPrice: Number.isNaN(originalPriceNum) ? 0 : originalPriceNum,
-				stock: totalStock,
-				image: allImages[0],
-				images: allImages,
-			};
-
 			if (isEditing) {
-				const res = await fetch(`/api/products/${isEditing.id}`, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(productData),
+				await updateProduct.mutateAsync({
+					id: isEditing.id,
+					data: {
+						id: isEditing.id,
+						name: formData.name,
+						description: formData.description,
+						price: priceNum,
+						discount: discountNum,
+						category: formData.category,
+						size: formData.size,
+						stock: formData.stock,
+						images: allImages,
+						isActive: isEditing.isActive,
+						createdAt: isEditing.createdAt,
+						updatedAt: isEditing.updatedAt,
+					},
 				});
-				if (!res.ok) throw new Error('Failed to update');
-				await fetchProducts(); // Refresh list
 				setIsEditing(null);
 			} else {
-				const res = await fetch('/api/products', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(productData),
-				});
-				if (!res.ok) throw new Error('Failed to create');
-				await fetchProducts(); // Refresh list
+				const productData: ProductCreate = {
+					name: formData.name,
+					description: formData.description,
+					price: priceNum,
+					discount: discountNum,
+					category: formData.category,
+					size: formData.size,
+					stock: formData.stock,
+					images: allImages,
+					isActive: true,
+				};
+				await createProduct.mutateAsync(productData);
 				setIsAdding(false);
 			}
 			setPendingImages([]);
@@ -274,8 +159,6 @@ export default function ProductsManager() {
 		} catch (error) {
 			console.error(error);
 			alert('Erro ao salvar produto.');
-		} finally {
-			setIsLoading(false);
 		}
 	};
 
@@ -298,44 +181,21 @@ export default function ProductsManager() {
 	};
 
 	const removeImage = (index: number) => {
-		// Calculate the split point between existing images and pending images
 		const existingCount = formData.images.length;
 
 		if (index < existingCount) {
-			// Removing an existing image
 			setFormData((prev) => ({
 				...prev,
 				images: prev.images.filter((_, i) => i !== index),
 			}));
 		} else {
-			// Removing a pending image
 			const pendingIndex = index - existingCount;
 			setPendingImages((prev) => prev.filter((_, i) => i !== pendingIndex));
 			setPreviewUrls((prev) => prev.filter((_, i) => i !== pendingIndex));
 		}
 	};
 
-	const addVariant = () => {
-		if (newVariant.size && newVariant.color) {
-			setFormData((prev) => ({
-				...prev,
-				variants: [...prev.variants, newVariant],
-			}));
-			setNewVariant({ size: '', color: '', stock: 0 });
-		} else {
-			alert('Preencha tamanho e cor');
-		}
-	};
-
-	const removeVariant = (index: number) => {
-		setFormData((prev) => ({
-			...prev,
-			variants: prev.variants.filter((_, i) => i !== index),
-		}));
-	};
-
 	if (isEditing || isAdding) {
-		// Combined list for display: Existing Images + Pending Previews
 		const displayImages = [...formData.images, ...previewUrls];
 
 		return (
@@ -355,27 +215,27 @@ export default function ProductsManager() {
 							id="product-name"
 							type="text"
 							required
-							className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+							className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
 							value={formData.name}
 							onChange={(e) =>
 								setFormData({ ...formData, name: e.target.value })
 							}
 						/>
 					</div>
-					<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+					<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 						<div>
 							<label
 								htmlFor="product-price"
 								className="block text-sm font-medium text-gray-700"
 							>
-								Preço Atual (R$)
+								Preco (R$)
 							</label>
 							<input
 								id="product-price"
 								type="number"
 								required
 								step="0.01"
-								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
 								value={formData.price}
 								onChange={(e) =>
 									setFormData({
@@ -387,26 +247,28 @@ export default function ProductsManager() {
 						</div>
 						<div>
 							<label
-								htmlFor="product-original-price"
+								htmlFor="product-discount"
 								className="block text-sm font-medium text-gray-700"
 							>
-								Preço Original (R$)
+								Desconto (%)
 							</label>
 							<input
-								id="product-original-price"
+								id="product-discount"
 								type="number"
-								step="0.01"
-								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
-								value={formData.originalPrice}
+								step="1"
+								min="0"
+								max="100"
+								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+								value={formData.discount}
 								onChange={(e) =>
 									setFormData({
 										...formData,
-										originalPrice: e.target.value,
+										discount: e.target.value,
 									})
 								}
 							/>
 						</div>
-						<div className="col-span-2 md:col-span-1">
+						<div>
 							<label
 								htmlFor="product-category"
 								className="block text-sm font-medium text-gray-700"
@@ -417,131 +279,53 @@ export default function ProductsManager() {
 								id="product-category"
 								type="text"
 								required
-								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
 								value={formData.category}
 								onChange={(e) =>
 									setFormData({ ...formData, category: e.target.value })
 								}
 							/>
 						</div>
+						<div>
+							<label
+								htmlFor="product-size"
+								className="block text-sm font-medium text-gray-700"
+							>
+								Tamanho
+							</label>
+							<input
+								id="product-size"
+								type="text"
+								placeholder="Ex: P, M, G"
+								className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+								value={formData.size}
+								onChange={(e) =>
+									setFormData({ ...formData, size: e.target.value })
+								}
+							/>
+						</div>
 					</div>
 
-					{/* Variantes Section */}
-					<div className="border-t border-b py-4 my-4">
-						<h4 className="font-bold text-gray-700 mb-2">
-							Estoque e Variantes
-						</h4>
-						<div className="flex gap-2 mb-4 items-end">
-							<div>
-								<label
-									htmlFor="variant-size"
-									className="block text-xs text-gray-500"
-								>
-									Tamanho
-								</label>
-								<input
-									id="variant-size"
-									type="text"
-									placeholder="Ex: P, M, 38"
-									className="border text-gray-500 rounded px-2 py-1 w-24"
-									value={newVariant.size}
-									onChange={(e) =>
-										setNewVariant({ ...newVariant, size: e.target.value })
-									}
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="variant-color"
-									className="block text-xs text-gray-500"
-								>
-									Cor
-								</label>
-								<input
-									id="variant-color"
-									type="text"
-									placeholder="Ex: Azul"
-									className="border text-gray-500 rounded px-2 py-1 w-32"
-									value={newVariant.color}
-									onChange={(e) =>
-										setNewVariant({ ...newVariant, color: e.target.value })
-									}
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="variant-stock"
-									className="block text-xs text-gray-500"
-								>
-									Qtd
-								</label>
-								<input
-									id="variant-stock"
-									type="number"
-									className="border text-gray-500 rounded px-2 py-1 w-20"
-									value={newVariant.stock}
-									onChange={(e) =>
-										setNewVariant({
-											...newVariant,
-											stock: parseInt(e.target.value, 10) || 0,
-										})
-									}
-								/>
-							</div>
-							<button
-								type="button"
-								onClick={addVariant}
-								className="bg-[#3C5F2D] text-white px-3 py-1 rounded hover:bg-[#2d4721] text-sm h-8.5"
-							>
-								Adicionar
-							</button>
-						</div>
-
-						<div className="bg-gray-50 rounded-lg p-3">
-							{formData.variants.length === 0 ? (
-								<p className="text-sm text-gray-500 italic">
-									Nenhuma variante adicionada.
-								</p>
-							) : (
-								<table className="w-full text-sm">
-									<thead>
-										<tr className="text-left text-gray-500">
-											<th className="pb-2">Tamanho</th>
-											<th className="pb-2">Cor</th>
-											<th className="pb-2">Estoque</th>
-											<th className="pb-2 text-right">Ação</th>
-										</tr>
-									</thead>
-									<tbody>
-										{formData.variants.map((v, idx) => (
-											<tr
-												key={`${v.size}-${v.color}`}
-												className="border-t border-gray-200 text-gray-500"
-											>
-												<td className="py-2">{v.size}</td>
-												<td className="py-2">{v.color}</td>
-												<td className="py-2">{v.stock}</td>
-												<td className="py-2 text-right">
-													<button
-														type="button"
-														onClick={() => removeVariant(idx)}
-														className="text-red-500 hover:text-red-700"
-													>
-														✕
-													</button>
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							)}
-							<div className="mt-2 pt-2 border-t flex justify-between items-center text-sm font-bold text-gray-700">
-								<span>Total em Estoque:</span>
-								<span>
-									{formData.variants.reduce((acc, curr) => acc + curr.stock, 0)}
-								</span>
-							</div>
-						</div>
+					<div>
+						<label
+							htmlFor="product-stock"
+							className="block text-sm font-medium text-gray-700"
+						>
+							Estoque
+						</label>
+						<input
+							id="product-stock"
+							type="number"
+							min="0"
+							className="mt-1 block w-32 rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+							value={formData.stock}
+							onChange={(e) =>
+								setFormData({
+									...formData,
+									stock: parseInt(e.target.value, 10) || 0,
+								})
+							}
+						/>
 					</div>
 
 					<div>
@@ -560,7 +344,6 @@ export default function ProductsManager() {
 									key={img}
 									className="relative aspect-square border-2 border-gray-200 rounded-lg overflow-hidden group"
 								>
-									{/* biome-ignore lint/performance/noImgElement: Local preview image */}
 									<img
 										src={img}
 										alt={`Preview ${index}`}
@@ -609,7 +392,7 @@ export default function ProductsManager() {
 							</div>
 						</div>
 						<p className="mt-1 text-xs text-gray-500">
-							A primeira imagem será a principal. Você pode adicionar várias.
+							A primeira imagem sera a principal. Voce pode adicionar varias.
 						</p>
 					</div>
 					<div>
@@ -617,11 +400,11 @@ export default function ProductsManager() {
 							htmlFor="product-description"
 							className="block text-sm font-medium text-gray-700"
 						>
-							Descrição
+							Descricao
 						</label>
 						<textarea
 							id="product-description"
-							className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+							className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
 							rows={3}
 							value={formData.description}
 							onChange={(e) =>
@@ -639,10 +422,16 @@ export default function ProductsManager() {
 						</button>
 						<button
 							type="submit"
-							disabled={isLoading}
-							className={`px-4 py-2 text-sm font-medium text-white bg-[#3C5F2D] rounded-md hover:bg-[#2d4721] ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+							disabled={createProduct.isPending || updateProduct.isPending}
+							className={`px-4 py-2 text-sm font-medium text-white bg-[#3C5F2D] rounded-md hover:bg-[#2d4721] ${
+								createProduct.isPending || updateProduct.isPending
+									? 'opacity-50 cursor-not-allowed'
+									: ''
+							}`}
 						>
-							{isLoading ? 'Salvando...' : 'Salvar'}
+							{createProduct.isPending || updateProduct.isPending
+								? 'Salvando...'
+								: 'Salvar'}
 						</button>
 					</div>
 				</form>
@@ -671,33 +460,35 @@ export default function ProductsManager() {
 								<th className="px-6 py-3">Imagem</th>
 								<th className="px-6 py-3">Produto</th>
 								<th className="px-6 py-3">Categoria</th>
-								<th className="px-6 py-3">Preço</th>
-								<th className="px-6 py-3">Estoque Total</th>
-								<th className="px-6 py-3 text-right">Ações</th>
+								<th className="px-6 py-3">Tamanho</th>
+								<th className="px-6 py-3">Preco</th>
+								<th className="px-6 py-3">Estoque</th>
+								<th className="px-6 py-3 text-right">Acoes</th>
 							</tr>
 						</thead>
 						<tbody className="divide-y divide-gray-100">
 							{isLoading ? (
 								<tr>
-									<td colSpan={6} className="px-6 py-4 text-center">
+									<td colSpan={7} className="px-6 py-4 text-center">
 										Carregando...
 									</td>
 								</tr>
-							) : products.length === 0 ? (
+							) : displayProducts.length === 0 ? (
 								<tr>
-									<td colSpan={6} className="px-6 py-4 text-center">
+									<td colSpan={7} className="px-6 py-4 text-center">
 										Nenhum produto encontrado.
 									</td>
 								</tr>
 							) : (
-								products.map((product) => (
+								displayProducts.map((product) => (
 									<tr key={product.id} className="hover:bg-gray-50">
 										<td className="px-6 py-4">
 											<div className="relative">
-												{/* biome-ignore lint/performance/noImgElement: Simple table thumbnail */}
 												<img
 													src={
-														product.images ? product.images[0] : product.image
+														product.images && product.images.length > 0
+															? product.images[0]
+															: '/Logo.jpg'
 													}
 													alt={product.name}
 													className="w-10 h-10 object-cover rounded-md border"
@@ -710,15 +501,13 @@ export default function ProductsManager() {
 											</div>
 										</td>
 										<td className="px-6 py-4 font-medium text-gray-900">
-											<div>{product.name}</div>
-											<div className="text-xs text-gray-500">
-												{product.variants
-													?.map((v) => `${v.size}/${v.color}`)
-													.join(', ')}
-											</div>
+											{product.name}
 										</td>
 										<td className="px-6 py-4 text-gray-500">
 											{product.category}
+										</td>
+										<td className="px-6 py-4 text-gray-500">
+											{product.size || '-'}
 										</td>
 										<td className="px-6 py-4 text-gray-900">
 											R$ {product.price.toFixed(2)}
@@ -746,6 +535,7 @@ export default function ProductsManager() {
 												type="button"
 												onClick={() => handleDelete(product.id)}
 												className="text-red-600 hover:text-red-800 font-medium"
+												disabled={deleteProduct.isPending}
 											>
 												Remover
 											</button>
