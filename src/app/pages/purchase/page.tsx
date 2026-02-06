@@ -60,7 +60,16 @@ export default function PurchasePage() {
 	useEffect(() => {
 		if (items.length === 0 || !selectedAddress) return;
 
-		createPaymentIntent(items, selectedAddress.city).then(setClientSecret);
+		const paymentItems = items.map((item) => ({
+			id: String(item.product.id),
+			name: item.product.name,
+			price: item.product.price,
+			quantity: item.quantity,
+		}));
+
+		createPaymentIntent(paymentItems, selectedAddress.city).then(
+			setClientSecret,
+		);
 	}, [items, selectedAddress]);
 
 	const appearance = {
