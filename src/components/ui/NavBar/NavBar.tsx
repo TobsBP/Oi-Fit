@@ -65,7 +65,7 @@ export default function NavBar() {
 		{ href: '/pages/products?category=Top', label: 'Tops' },
 		{ href: '/pages/products?category=Calça', label: 'Calças' },
 		{ href: '/pages/products?category=Short', label: 'Shorts' },
-		{ href: '/pages/products?category=Conjunto', label: 'Conjuntos' },
+		{ href: '/pages/products?category=Conjuntos', label: 'Conjuntos' },
 		{ href: '/pages/products?category=Macacão', label: 'Macacão' },
 		{ href: '/pages/products?category=Macaquinho', label: 'Macaquinho' },
 		{ href: '/pages/about', label: 'Sobre' },
