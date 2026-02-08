@@ -11,6 +11,7 @@ export const productSchema = z.object({
 	stock: z.number(),
 	images: z.array(z.string()),
 	isActive: z.boolean(),
+	showStock: z.boolean(),
 	createdAt: z.string(),
 	updatedAt: z.string(),
 });

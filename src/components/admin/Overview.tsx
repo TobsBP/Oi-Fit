@@ -25,7 +25,7 @@ export default function Overview() {
 				<p className="text-sm text-gray-500">Receita mensal</p>
 			</div>
 			<div className="p-6 pt-0 pl-2">
-				<div className="flex items-end justify-between h-[350px] w-full gap-2">
+				<div className="flex items-end justify-between h-87.5 w-full gap-2">
 					{data.map((item) => (
 						<div
 							key={item.name}

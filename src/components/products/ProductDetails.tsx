@@ -13,6 +13,7 @@ interface Product {
 	category: string;
 	size: string;
 	stock: number;
+	showStock: boolean;
 	images: string[];
 	description: string;
 	isActive: boolean;
@@ -110,10 +111,12 @@ export default function ProductDetails({ product }: { product: Product }) {
 
 								{/* Stock Display */}
 								{product.stock > 0 ? (
-									<div className="flex items-center gap-2 text-green-600 font-medium text-sm">
-										<div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-										Em estoque: {product.stock} unidades
-									</div>
+									product.showStock && (
+										<div className="flex items-center gap-2 text-green-600 font-medium text-sm">
+											<div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+											Em estoque: {product.stock} unidades
+										</div>
+									)
 								) : (
 									<p className="text-sm text-red-600 font-bold uppercase flex items-center gap-2">
 										<span className="w-2 h-2 rounded-full bg-red-600"></span>

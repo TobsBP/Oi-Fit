@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type React from 'react';
 import { useState } from 'react';
 import {
@@ -18,6 +19,7 @@ interface ProductFormData {
 	category: string;
 	size: string;
 	stock: number;
+	showStock: boolean;
 	images: string[];
 	description: string;
 }
@@ -38,6 +40,7 @@ export default function ProductsManager() {
 		category: '',
 		size: '',
 		stock: 0,
+		showStock: false,
 		images: ['/Logo.jpg'],
 		description: '',
 	});
@@ -67,6 +70,7 @@ export default function ProductsManager() {
 			category: product.category,
 			size: product.size || '',
 			stock: product.stock || 0,
+			showStock: product.showStock ?? false,
 			images: product.images || ['/Logo.jpg'],
 			description: product.description,
 		});
@@ -85,6 +89,7 @@ export default function ProductsManager() {
 			category: '',
 			size: '',
 			stock: 0,
+			showStock: false,
 			images: ['/Logo.jpg'],
 			description: '',
 		});
@@ -132,6 +137,7 @@ export default function ProductsManager() {
 						category: formData.category,
 						size: formData.size,
 						stock: formData.stock,
+						showStock: formData.showStock,
 						images: allImages,
 						isActive: isEditing.isActive,
 						createdAt: isEditing.createdAt,
@@ -148,6 +154,7 @@ export default function ProductsManager() {
 					category: formData.category,
 					size: formData.size,
 					stock: formData.stock,
+					showStock: formData.showStock,
 					images: allImages,
 					isActive: true,
 				};
@@ -306,26 +313,57 @@ export default function ProductsManager() {
 						</div>
 					</div>
 
-					<div>
+					<div className="flex items-end gap-6">
+						<div>
+							<label
+								htmlFor="product-stock"
+								className="block text-sm font-medium text-gray-700"
+							>
+								Estoque
+							</label>
+							<input
+								id="product-stock"
+								type="number"
+								min="0"
+								className="mt-1 block w-32 rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
+								value={formData.stock}
+								onChange={(e) =>
+									setFormData({
+										...formData,
+										stock: parseInt(e.target.value, 10) || 0,
+									})
+								}
+							/>
+						</div>
 						<label
-							htmlFor="product-stock"
-							className="block text-sm font-medium text-gray-700"
+							htmlFor="product-showStock"
+							className="flex items-center gap-2 pb-2 cursor-pointer select-none"
 						>
-							Estoque
+							<button
+								id="product-showStock"
+								type="button"
+								role="switch"
+								aria-checked={formData.showStock}
+								onClick={() =>
+									setFormData({
+										...formData,
+										showStock: !formData.showStock,
+									})
+								}
+								className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#3C5F2D] focus:ring-offset-2 ${
+									formData.showStock ? 'bg-[#3C5F2D]' : 'bg-gray-200'
+								}`}
+							>
+								<span
+									className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+										formData.showStock ? 'translate-x-5' : 'translate-x-0'
+									}`}
+								/>
+							</button>
+							<span className="text-sm font-medium text-gray-700">
+								Mostrar estoque no site
+							</span>
 						</label>
-						<input
-							id="product-stock"
-							type="number"
-							min="0"
-							className="mt-1 block w-32 rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-500 focus:border-[#3C5F2D] focus:outline-none focus:ring-1 focus:ring-[#3C5F2D]"
-							value={formData.stock}
-							onChange={(e) =>
-								setFormData({
-									...formData,
-									stock: parseInt(e.target.value, 10) || 0,
-								})
-							}
-						/>
 					</div>
 
 					<div>
@@ -344,7 +382,9 @@ export default function ProductsManager() {
 									key={img}
 									className="relative aspect-square border-2 border-gray-200 rounded-lg overflow-hidden group"
 								>
-									<img
+									<Image
+										width={150}
+										height={150}
 										src={img}
 										alt={`Preview ${index}`}
 										className="w-full h-full object-cover"
@@ -484,7 +524,9 @@ export default function ProductsManager() {
 									<tr key={product.id} className="hover:bg-gray-50">
 										<td className="px-6 py-4">
 											<div className="relative">
-												<img
+												<Image
+													width={150}
+													height={150}
 													src={
 														product.images && product.images.length > 0
 															? product.images[0]
