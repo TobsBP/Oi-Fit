@@ -37,7 +37,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 				<div className="bg-white rounded-3xl p-6 md:p-8 shadow-lg">
 					<div className="grid md:grid-cols-2 gap-8 lg:gap-12">
 						{/* Image Gallery Section */}
-						<div className="space-y-4">
+						<div className="space-y-4 min-w-0">
 							<div className="aspect-square relative rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
 								<Image
 									src={selectedImage}

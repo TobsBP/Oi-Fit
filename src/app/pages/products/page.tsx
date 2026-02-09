@@ -265,7 +265,7 @@ function ProductsContent() {
 
 				{/* Grid de produtos */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
-					{currentProducts.map((product) => (
+					{currentProducts.map((product, index) => (
 						<Link
 							href={`/pages/products/${product.id}`}
 							key={product.id}
@@ -281,6 +281,7 @@ function ProductsContent() {
 									alt={product.name}
 									width={400}
 									height={400}
+									priority={index < 4}
 									className={`w-full h-full object-cover transition-transform duration-500 ${product.stock === 0 ? 'grayscale' : 'group-hover:scale-110'}`}
 								/>
 								{product.stock === 0 ? (

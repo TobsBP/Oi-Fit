@@ -8,7 +8,6 @@ const fruitImages = [
 	'/Fruta_02.png',
 	'/Fruta_03.png',
 	'/Fruta_04.png',
-	'/Adesivo_Frutas_00.png',
 ];
 
 interface FruitPosition {
@@ -60,6 +59,7 @@ export default function BackgroundFruits() {
 						alt=""
 						fill
 						sizes="80px"
+						loading="eager"
 						className="object-contain"
 					/>
 				</div>

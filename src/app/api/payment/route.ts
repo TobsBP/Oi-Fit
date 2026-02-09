@@ -1,25 +1,27 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { PREDEFINED_CITIES } from '@/src/data/cities';
 import { stripe } from '@/src/lib/stripe';
 
-interface CartItem {
-	product: {
-		price: number;
-		discount?: number;
-	};
-	quantity: number;
-}
+const paymentBodySchema = z.object({
+	items: z.array(
+		z.object({
+			price: z.number().positive(),
+			quantity: z.number().int().positive(),
+		}),
+	),
+	cityName: z.string(),
+});
 
 export async function POST(request: Request) {
 	try {
-		const { items, cityName } = await request.json();
+		const body = await request.json();
+		const { items, cityName } = paymentBodySchema.parse(body);
 
-		const subtotal = items.reduce((sum: number, item: CartItem) => {
-			const price = item.product.price;
-			const discount = item.product.discount || 0;
-			const finalPrice = price - (price * discount) / 100;
-			return sum + finalPrice * item.quantity;
-		}, 0);
+		const subtotal = items.reduce(
+			(sum, item) => sum + item.price * item.quantity,
+			0,
+		);
 
 		const freight =
 			PREDEFINED_CITIES.find((c) => c.name === cityName)?.freight || 0;
