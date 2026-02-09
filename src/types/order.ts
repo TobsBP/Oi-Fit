@@ -3,18 +3,14 @@ import { z } from 'zod';
 export const orderSchema = z.object({
 	id: z.string(),
 	userId: z.string(),
-	status: z.enum([
-		'PENDING',
-		'PAID',
-		'SHIPPED',
-		'DELIVERED',
-		'CANCELED',
-		'RETURNED',
-	]),
+	status: z.string(),
 	totalPrice: z.number(),
 	shippingAddress: z.any(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
+	createdAt: z.string(),
+	updatedAt: z.string(),
+	quantity: z.number().optional(),
+	productId: z.string().optional(),
+	paymentIntentId: z.string().nullable().optional(),
 });
 
 export type Order = z.infer<typeof orderSchema>;

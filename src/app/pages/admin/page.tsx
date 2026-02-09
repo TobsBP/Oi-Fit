@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import DashboardStats from '@/src/components/admin/DashboardStats';
+import OrdersManager from '@/src/components/admin/OrdersManager';
 import Overview from '@/src/components/admin/Overview';
 import ProductsManager from '@/src/components/admin/ProductsManager';
 import RecentSales from '@/src/components/admin/RecentSales';
@@ -11,7 +12,7 @@ import { supabase } from '@/src/lib/supabase';
 
 export default function AdminPage() {
 	const [activeTab, setActiveTab] = useState<
-		'dashboard' | 'products' | 'users'
+		'dashboard' | 'products' | 'orders' | 'users'
 	>('dashboard');
 	const [loading, setLoading] = useState(true);
 	const router = useRouter();
@@ -77,6 +78,17 @@ export default function AdminPage() {
 				</button>
 				<button
 					type="button"
+					onClick={() => setActiveTab('orders')}
+					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+						activeTab === 'orders'
+							? 'bg-white text-[#3C5F2D] shadow-sm'
+							: 'text-gray-500 hover:text-[#3C5F2D]'
+					}`}
+				>
+					Pedidos
+				</button>
+				<button
+					type="button"
 					onClick={() => setActiveTab('users')}
 					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
 						activeTab === 'users'
@@ -101,6 +113,8 @@ export default function AdminPage() {
 				)}
 
 				{activeTab === 'products' && <ProductsManager />}
+
+				{activeTab === 'orders' && <OrdersManager />}
 
 				{activeTab === 'users' && <UsersManager />}
 			</div>

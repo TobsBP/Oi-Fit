@@ -4,7 +4,9 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AddressForm from '@/src/components/profile/AddressForm';
 import { deleteAddress } from '@/src/services/addresses';
+import { getMyOrders } from '@/src/services/orders';
 import { getUser } from '@/src/services/users';
+import type { Order } from '@/src/types/order';
 import type { User } from '@/src/types/user';
 import { getStatusColor } from '@/src/utils/StatusColor';
 import { translateStatus } from '@/src/utils/TranslateStatus';
@@ -15,6 +17,7 @@ export default function ProfilePage() {
 	const [showAddressModal, setShowAddressModal] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [userData, setUserData] = useState<User | null>(null);
+	const [orders, setOrders] = useState<Order[]>([]);
 	const [deletingAddressId, setDeletingAddressId] = useState<string | null>(
 		null,
 	);
@@ -35,9 +38,19 @@ export default function ProfilePage() {
 		}
 	}, [router]);
 
+	const fetchOrders = useCallback(async () => {
+		try {
+			const data = await getMyOrders();
+			setOrders(data);
+		} catch (error) {
+			console.error('Error fetching orders:', error);
+		}
+	}, []);
+
 	useEffect(() => {
 		fetchUserData();
-	}, [fetchUserData]);
+		fetchOrders();
+	}, [fetchUserData, fetchOrders]);
 
 	const handleDeleteAddress = async (addressId: string) => {
 		if (!confirm('Tem certeza que deseja excluir este endereço?')) return;
@@ -347,7 +360,7 @@ export default function ProfilePage() {
 
 				{activeTab === 'orders' && (
 					<div className="space-y-6">
-						{userData.orders?.map((order) => (
+						{orders.map((order) => (
 							<div
 								key={order.id}
 								className="bg-white rounded-2xl shadow-lg p-6 md:p-8 hover:shadow-2xl transition-all duration-300"
@@ -396,7 +409,7 @@ export default function ProfilePage() {
 							</div>
 						))}
 
-						{(!userData.orders || userData.orders.length === 0) && (
+						{orders.length === 0 && (
 							<div className="bg-white rounded-2xl shadow-lg p-12 text-center">
 								<svg
 									className="w-16 h-16 mx-auto mb-4 text-gray-300"

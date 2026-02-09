@@ -4,20 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import AddToCartButton from '@/src/components/products/AddToCartButton';
-
-interface Product {
-	id: string;
-	name: string;
-	price: number;
-	discount: number;
-	category: string;
-	size: string;
-	stock: number;
-	showStock: boolean;
-	images: string[];
-	description: string;
-	isActive: boolean;
-}
+import type { Product } from '@/src/types/products';
 
 export default function ProductDetails({ product }: { product: Product }) {
 	const images =

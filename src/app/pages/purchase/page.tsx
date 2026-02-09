@@ -9,7 +9,7 @@ import AddressForm from '@/src/components/profile/AddressForm';
 import CheckoutForm from '@/src/components/purchase/CheckoutForm';
 import { useCart } from '@/src/context/CartContext';
 import { PREDEFINED_CITIES } from '@/src/data/cities';
-import { createPaymentIntent } from '@/src/services/payment';
+import { createOrder } from '@/src/services/payment';
 import { getUser } from '@/src/services/users';
 import type { Address } from '@/src/types/address';
 import type { User } from '@/src/types/user';
@@ -61,15 +61,13 @@ export default function PurchasePage() {
 		if (items.length === 0 || !selectedAddress) return;
 
 		const paymentItems = items.map((item) => ({
-			id: String(item.product.id),
+			productId: String(item.product.id),
 			name: item.product.name,
 			price: item.product.price,
 			quantity: item.quantity,
 		}));
 
-		createPaymentIntent(paymentItems, selectedAddress.city).then(
-			setClientSecret,
-		);
+		createOrder(paymentItems, selectedAddress.city).then(setClientSecret);
 	}, [items, selectedAddress]);
 
 	const appearance = {
