@@ -1,7 +1,11 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getAllOrders, getMyOrders } from '@/src/services/orders';
+import {
+	getAllOrders,
+	getMyOrders,
+	updateOrderDelivery,
+} from '@/src/services/orders';
 import { createOrder } from '@/src/services/payment';
 import type { PaymentCartItem } from '@/src/types/payment';
 
@@ -29,6 +33,23 @@ export function useMyOrders() {
 		error,
 		isLoading,
 	};
+}
+
+export function useUpdateDelivery() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			orderId,
+			delivery,
+		}: {
+			orderId: string;
+			delivery: string;
+		}) => updateOrderDelivery(orderId, delivery),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['orders'] });
+			queryClient.invalidateQueries({ queryKey: ['orders-me'] });
+		},
+	});
 }
 
 export function useCreateOrder() {

@@ -19,6 +19,7 @@ export default function ProfilePage() {
 		refetch: refetchUser,
 	} = useCurrentUser();
 	const { orders = [], isLoading: ordersLoading } = useMyOrders();
+	const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 	const [deletingAddressId, setDeletingAddressId] = useState<string | null>(
 		null,
 	);
@@ -378,6 +379,7 @@ export default function ProfilePage() {
 									<div className="col-span-2 md:col-span-1 flex items-end">
 										<button
 											type="button"
+											onClick={() => setSelectedOrderId(order.id)}
 											className="w-full px-4 py-2 bg-white text-[#3C5F2D] font-medium rounded-xl border-2 border-[#3C5F2D] hover:bg-[#3C5F2D] hover:text-white transition-all duration-300"
 										>
 											Ver Detalhes
@@ -420,6 +422,126 @@ export default function ProfilePage() {
 								</button>
 							</div>
 						)}
+						{(() => {
+							const selectedOrder = orders.find(
+								(o) => o.id === selectedOrderId,
+							);
+							if (!selectedOrder) return null;
+							return (
+								<div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+									<div className="bg-white rounded-2xl p-6 md:p-8 w-full max-w-lg shadow-2xl">
+										<div className="flex justify-between items-center mb-6">
+											<h2 className="text-2xl font-bold text-[#3C5F2D]">
+												Pedido #{selectedOrder.id.slice(0, 8)}
+											</h2>
+											<button
+												type="button"
+												onClick={() => setSelectedOrderId(null)}
+												className="text-gray-400 hover:text-gray-600 transition-colors"
+											>
+												<svg
+													className="w-6 h-6"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<title>Sacola</title>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={2}
+														d="M6 18L18 6M6 6l12 12"
+													/>
+												</svg>
+											</button>
+										</div>
+
+										<div className="space-y-4">
+											<div className="grid grid-cols-2 gap-4">
+												<div>
+													<p className="text-sm text-gray-500">Status</p>
+													<span
+														className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${getStatusColor(selectedOrder.status)}`}
+													>
+														{translateStatus(selectedOrder.status)}
+													</span>
+												</div>
+												<div>
+													<p className="text-sm text-gray-500">Total</p>
+													<p className="text-lg font-semibold text-[#3C5F2D]">
+														R${' '}
+														{Number(selectedOrder.totalPrice)
+															.toFixed(2)
+															.replace('.', ',')}
+													</p>
+												</div>
+												<div>
+													<p className="text-sm text-gray-500">Quantidade</p>
+													<p className="font-medium">
+														{selectedOrder.quantity ?? '-'}
+													</p>
+												</div>
+												<div>
+													<p className="text-sm text-gray-500">Data</p>
+													<p className="font-medium">
+														{new Date(
+															selectedOrder.createdAt,
+														).toLocaleDateString('pt-BR')}
+													</p>
+												</div>
+												{selectedOrder.shippingAddress?.cityName && (
+													<div className="col-span-2">
+														<p className="text-sm text-gray-500">Cidade</p>
+														<p className="font-medium">
+															{selectedOrder.shippingAddress.cityName}
+														</p>
+													</div>
+												)}
+											</div>
+
+											<div className="border-t border-gray-200 pt-4">
+												<div className="flex items-center gap-2 mb-2">
+													<svg
+														className="w-5 h-5 text-[#3C5F2D]"
+														fill="none"
+														stroke="currentColor"
+														viewBox="0 0 24 24"
+													>
+														<title>Delivey</title>
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+														/>
+													</svg>
+													<p className="text-sm font-semibold text-[#3C5F2D]">
+														Entrega
+													</p>
+												</div>
+												{selectedOrder.delivery ? (
+													<p className="text-gray-700 bg-[#f7faf5] rounded-xl p-3 border border-[#3C5F2D]/20">
+														{selectedOrder.delivery}
+													</p>
+												) : (
+													<p className="text-gray-400 italic">
+														Ainda sem informações de entrega.
+													</p>
+												)}
+											</div>
+										</div>
+
+										<button
+											type="button"
+											onClick={() => setSelectedOrderId(null)}
+											className="w-full mt-6 px-4 py-2.5 bg-[#3C5F2D] text-white font-medium rounded-xl hover:bg-[#2e4a22] transition-colors"
+										>
+											Fechar
+										</button>
+									</div>
+								</div>
+							);
+						})()}
 					</div>
 				)}
 			</div>
