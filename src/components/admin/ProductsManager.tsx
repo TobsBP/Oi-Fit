@@ -9,26 +9,19 @@ import {
 	useProducts,
 	useUpdateProduct,
 } from '@/src/hooks/useProducts';
-import { uploadImage } from '@/src/services/uploads';
-import type { Product, ProductCreate } from '@/src/types/products';
-
-interface ProductFormData {
-	name: string;
-	price: string;
-	discount: string;
-	category: string;
-	size: string;
-	stock: number;
-	showStock: boolean;
-	images: string[];
-	description: string;
-}
+import { useUploadImage } from '@/src/hooks/useUpload';
+import type {
+	Product,
+	ProductCreate,
+	ProductFormData,
+} from '@/src/types/products';
 
 export default function ProductsManager() {
 	const { products, isLoading } = useProducts();
 	const createProduct = useCreateProduct();
 	const updateProduct = useUpdateProduct();
 	const deleteProduct = useDeleteProduct();
+	const uploadImageMutation = useUploadImage();
 
 	const [isEditing, setIsEditing] = useState<Product | null>(null);
 	const [isAdding, setIsAdding] = useState(false);
@@ -97,17 +90,13 @@ export default function ProductsManager() {
 		setPreviewUrls([]);
 	};
 
-	const uploadImageToCloudinary = async (file: File): Promise<string> => {
-		return uploadImage(file);
-	};
-
 	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		try {
 			const uploadedUrls: string[] = [];
 			for (const file of pendingImages) {
-				const url = await uploadImageToCloudinary(file);
+				const url = await uploadImageMutation.mutateAsync(file);
 				uploadedUrls.push(url);
 			}
 

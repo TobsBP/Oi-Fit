@@ -2,37 +2,34 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ZodError } from 'zod';
-import { signIn } from '@/src/services/auth';
+import { useSignIn } from '@/src/hooks/useAuth';
 import { loginSchema } from '@/src/types/auth';
 
 export default function LoginPage() {
 	const [loginValue, setLoginValue] = useState('');
 	const [password, setPassword] = useState('');
-	const [loading, setLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
-	const router = useRouter();
+	const signInMutation = useSignIn();
+
+	const loading = signInMutation.isPending;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
 
 		try {
 			const credentials = { email: loginValue, password };
 
 			loginSchema.parse(credentials);
 
-			await signIn(credentials, router, setLoading);
+			await signInMutation.mutateAsync(credentials);
 		} catch (error) {
 			if (error instanceof ZodError) {
-				alert('Errorrrrr');
+				alert('Email ou senha inválidos');
 			} else {
 				console.error('Login error:', error);
-				alert('Ocorreu um erro ao fazer login.');
 			}
-			setLoading(false);
 		}
 	};
 

@@ -8,6 +8,7 @@ import Overview from '@/src/components/admin/Overview';
 import ProductsManager from '@/src/components/admin/ProductsManager';
 import RecentSales from '@/src/components/admin/RecentSales';
 import UsersManager from '@/src/components/admin/UsersManager';
+import { useSalesStats } from '@/src/hooks/useSalesStats';
 import { supabase } from '@/src/lib/supabase';
 
 export default function AdminPage() {
@@ -15,6 +16,7 @@ export default function AdminPage() {
 		'dashboard' | 'products' | 'orders' | 'users'
 	>('dashboard');
 	const [loading, setLoading] = useState(true);
+	const { stats, isLoading: statsLoading } = useSalesStats();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -88,7 +90,7 @@ export default function AdminPage() {
 					Pedidos
 				</button>
 				<button
-					type="button"
+					type="submit"
 					onClick={() => setActiveTab('users')}
 					className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
 						activeTab === 'users'
@@ -104,10 +106,16 @@ export default function AdminPage() {
 			<div className="space-y-4">
 				{activeTab === 'dashboard' && (
 					<>
-						<DashboardStats />
+						<DashboardStats stats={stats} loading={statsLoading} />
 						<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-							<Overview />
-							<RecentSales />
+							<Overview
+								monthlyRevenue={stats?.monthlyRevenue ?? []}
+								loading={statsLoading}
+							/>
+							<RecentSales
+								recentOrders={stats?.recentOrders ?? []}
+								loading={statsLoading}
+							/>
 						</div>
 					</>
 				)}

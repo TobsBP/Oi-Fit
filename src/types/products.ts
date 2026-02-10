@@ -27,3 +27,17 @@ export const productUpdateSchema = productSchema;
 export type Product = z.infer<typeof productSchema>;
 export type ProductCreate = z.infer<typeof productCreateSchema>;
 export type ProductUpdate = z.infer<typeof productUpdateSchema>;
+
+export const productFormDataSchema = z.object({
+	name: z.string(),
+	price: z.string(),
+	discount: z.string(),
+	category: z.string(),
+	size: z.string(),
+	stock: z.number(),
+	showStock: z.boolean(),
+	images: z.array(z.string()),
+	description: z.string(),
+});
+
+export type ProductFormData = z.infer<typeof productFormDataSchema>;

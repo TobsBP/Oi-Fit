@@ -1,13 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AddressForm from '@/src/components/profile/AddressForm';
-import { deleteAddress } from '@/src/services/addresses';
-import { getMyOrders } from '@/src/services/orders';
-import { getUser } from '@/src/services/users';
-import type { Order } from '@/src/types/order';
-import type { User } from '@/src/types/user';
+import { useDeleteAddress } from '@/src/hooks/useAddresses';
+import { useMyOrders } from '@/src/hooks/useOrders';
+import { useCurrentUser } from '@/src/hooks/useUsers';
 import { getStatusColor } from '@/src/utils/StatusColor';
 import { translateStatus } from '@/src/utils/TranslateStatus';
 
@@ -15,50 +13,30 @@ export default function ProfilePage() {
 	const [activeTab, setActiveTab] = useState('profile');
 	const [showEditMenu, setShowEditMenu] = useState(false);
 	const [showAddressModal, setShowAddressModal] = useState(false);
-	const [loading, setLoading] = useState(true);
-	const [userData, setUserData] = useState<User | null>(null);
-	const [orders, setOrders] = useState<Order[]>([]);
+	const {
+		user: userData,
+		isLoading: userLoading,
+		refetch: refetchUser,
+	} = useCurrentUser();
+	const { orders = [], isLoading: ordersLoading } = useMyOrders();
 	const [deletingAddressId, setDeletingAddressId] = useState<string | null>(
 		null,
 	);
+	const deleteAddressMutation = useDeleteAddress();
 	const router = useRouter();
 
-	const fetchUserData = useCallback(async () => {
-		try {
-			const data = await getUser();
-			if (!data) {
-				router.push('/pages/login');
-				return;
-			}
-			setUserData(data);
-		} catch (error) {
-			console.error('Error:', error);
-		} finally {
-			setLoading(false);
-		}
-	}, [router]);
-
-	const fetchOrders = useCallback(async () => {
-		try {
-			const data = await getMyOrders();
-			setOrders(data);
-		} catch (error) {
-			console.error('Error fetching orders:', error);
-		}
-	}, []);
-
 	useEffect(() => {
-		fetchUserData();
-		fetchOrders();
-	}, [fetchUserData, fetchOrders]);
+		if (!userLoading && !userData) {
+			router.push('/pages/login');
+		}
+	}, [userData, userLoading, router]);
 
 	const handleDeleteAddress = async (addressId: string) => {
 		if (!confirm('Tem certeza que deseja excluir este endereço?')) return;
 
 		setDeletingAddressId(addressId);
 		try {
-			await deleteAddress(addressId);
-			fetchUserData();
+			await deleteAddressMutation.mutateAsync(addressId);
 		} catch (error) {
 			console.error('Error deleting address:', error);
 			alert('Erro ao excluir endereço');
@@ -67,7 +45,7 @@ export default function ProfilePage() {
 		}
 	};
 
-	if (loading) {
+	if (userLoading || ordersLoading) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#3C5F2D]" />
@@ -88,7 +66,7 @@ export default function ProfilePage() {
 						<AddressForm
 							onSuccess={() => {
 								setShowAddressModal(false);
-								fetchUserData();
+								refetchUser();
 							}}
 							onCancel={() => setShowAddressModal(false)}
 						/>

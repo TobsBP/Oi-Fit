@@ -2,9 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { useSignUp } from '@/src/hooks/useAuth';
 
 export default function SignupPage() {
 	const [formData, setFormData] = useState({
@@ -14,11 +13,12 @@ export default function SignupPage() {
 		password: '',
 		confirmPassword: '',
 	});
-	const [loading, setLoading] = useState(false);
+	const signUpMutation = useSignUp();
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [acceptTerms, setAcceptTerms] = useState(false);
-	const router = useRouter();
+
+	const loading = signUpMutation.isPending;
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setFormData({
@@ -40,32 +40,15 @@ export default function SignupPage() {
 			return;
 		}
 
-		setLoading(true);
-
 		try {
-			const { error } = await supabase.auth.signUp({
+			await signUpMutation.mutateAsync({
+				name: formData.name,
 				email: formData.email,
+				phone: formData.phone,
 				password: formData.password,
-				options: {
-					data: {
-						name: formData.name,
-						phone: formData.phone,
-					},
-				},
 			});
-
-			if (error) {
-				alert(error.message);
-				return;
-			}
-
-			alert('Cadastro realizado com sucesso! Faça login para continuar.');
-			router.push('/pages/login');
 		} catch (error) {
 			console.error('Signup error:', error);
-			alert('Ocorreu um erro ao criar a conta.');
-		} finally {
-			setLoading(false);
 		}
 	};
 

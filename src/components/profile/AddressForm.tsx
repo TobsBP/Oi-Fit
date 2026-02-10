@@ -2,15 +2,12 @@
 
 import { useState } from 'react';
 import { PREDEFINED_CITIES } from '@/src/data/cities';
-import { createAddress, fetchCep } from '@/src/services/addresses';
-
-interface AddressFormProps {
-	onSuccess: () => void;
-	onCancel: () => void;
-}
+import { useCreateAddress, useFetchCep } from '@/src/hooks/useAddresses';
+import type { AddressFormProps } from '@/src/types/components';
 
 export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
-	const [loading, setLoading] = useState(false);
+	const createAddressMutation = useCreateAddress();
+	const fetchCepMutation = useFetchCep();
 	const [error, setError] = useState<string | null>(null);
 	const [formData, setFormData] = useState({
 		street: '',
@@ -21,6 +18,8 @@ export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
 		state: '',
 		zipCode: '',
 	});
+
+	const loading = createAddressMutation.isPending;
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -46,7 +45,7 @@ export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
 
 	const handleBlurCep = async () => {
 		try {
-			const data = await fetchCep(formData.zipCode);
+			const data = await fetchCepMutation.mutateAsync(formData.zipCode);
 			if (data) {
 				setFormData((prev) => ({
 					...prev,
@@ -63,11 +62,10 @@ export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
 		setError(null);
 
 		try {
-			await createAddress(formData);
+			await createAddressMutation.mutateAsync(formData);
 			onSuccess();
 		} catch (err: unknown) {
 			if (err instanceof Error) {
@@ -75,8 +73,6 @@ export default function AddressForm({ onSuccess, onCancel }: AddressFormProps) {
 			} else {
 				setError('Ocorreu um erro desconhecido');
 			}
-		} finally {
-			setLoading(false);
 		}
 	};
 

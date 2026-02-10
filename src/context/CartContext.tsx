@@ -2,44 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
-
-export interface Product {
-	id: string | number;
-	name: string;
-	price: number;
-	discount?: number;
-	category: string;
-	images: string[];
-	description: string;
-}
-
-export interface CartItem {
-	product: Product;
-	quantity: number;
-	size?: string;
-	color?: string;
-}
-
-interface CartContextType {
-	items: CartItem[];
-	isOpen: boolean;
-	addToCart: (product: Product, size?: string, color?: string) => void;
-	removeFromCart: (
-		productId: string | number,
-		size?: string,
-		color?: string,
-	) => void;
-	updateQuantity: (
-		productId: string | number,
-		quantity: number,
-		size?: string,
-		color?: string,
-	) => void;
-	toggleCart: () => void;
-	clearCart: () => void;
-	totalItems: number;
-	totalPrice: number;
-}
+import type { CartContextType, CartItem } from '@/src/types/cart';
+import type { Product } from '@/src/types/products';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -86,11 +50,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 		setIsOpen(true);
 	};
 
-	const removeFromCart = (
-		productId: string | number,
-		size?: string,
-		color?: string,
-	) => {
+	const removeFromCart = (productId: string, size?: string, color?: string) => {
 		setItems((prev) =>
 			prev.filter(
 				(item) =>
@@ -104,7 +64,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 	};
 
 	const updateQuantity = (
-		productId: string | number,
+		productId: string,
 		quantity: number,
 		size?: string,
 		color?: string,

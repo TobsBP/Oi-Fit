@@ -1,13 +1,7 @@
 'use client';
 
-import { type Product, useCart } from '@/src/context/CartContext';
-
-interface AddToCartButtonProps {
-	product: Product;
-	className?: string;
-	selectedSize?: string;
-	selectedColor?: string;
-}
+import { useCart } from '@/src/context/CartContext';
+import type { AddToCartButtonProps } from '@/src/types/components';
 
 export default function AddToCartButton({
 	product,

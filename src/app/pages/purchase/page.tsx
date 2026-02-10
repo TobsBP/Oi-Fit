@@ -9,10 +9,10 @@ import AddressForm from '@/src/components/profile/AddressForm';
 import CheckoutForm from '@/src/components/purchase/CheckoutForm';
 import { useCart } from '@/src/context/CartContext';
 import { PREDEFINED_CITIES } from '@/src/data/cities';
-import { createOrder } from '@/src/services/payment';
-import { getUser } from '@/src/services/users';
+import { useCreateOrder } from '@/src/hooks/useOrders';
+import { useCurrentUser } from '@/src/hooks/useUsers';
 import type { Address } from '@/src/types/address';
-import type { User } from '@/src/types/user';
+import type { CartItem } from '@/src/types/cart';
 
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_SECRET_KEY;
 const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
@@ -20,11 +20,15 @@ const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 export default function PurchasePage() {
 	const [clientSecret, setClientSecret] = useState('');
 	const { items, totalPrice } = useCart();
-	const [user, setUser] = useState<User | null>(null);
+	const {
+		user,
+		isLoading: loadingUser,
+		refetch: refetchUser,
+	} = useCurrentUser();
 	const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 	const [showAddressForm, setShowAddressForm] = useState(false);
 	const [showAddressList, setShowAddressList] = useState(false);
-	const [loadingUser, setLoadingUser] = useState(true);
+	const createOrderMutation = useCreateOrder();
 	const router = useRouter();
 
 	const freight = selectedAddress
@@ -34,41 +38,33 @@ export default function PurchasePage() {
 	const totalWithFreight = totalPrice + freight;
 
 	useEffect(() => {
-		const fetchUserData = async () => {
-			try {
-				const userData = await getUser();
-				if (!userData) {
-					router.push('/pages/login');
-					return;
-				}
-				setUser(userData);
-				if (userData.addresses && userData.addresses.length > 0) {
-					setSelectedAddress(userData.addresses[0]);
-				} else {
-					setShowAddressForm(true);
-				}
-			} catch (error) {
-				console.error('Error fetching user:', error);
-			} finally {
-				setLoadingUser(false);
-			}
-		};
+		if (!loadingUser && !user) {
+			router.push('/pages/login');
+			return;
+		}
 
-		fetchUserData();
-	}, [router]);
+		if (user?.addresses && user.addresses.length > 0 && !selectedAddress) {
+			setSelectedAddress(user.addresses[0]);
+		} else if (user && (!user.addresses || user.addresses.length === 0)) {
+			setShowAddressForm(true);
+		}
+	}, [user, loadingUser, router, selectedAddress]);
 
 	useEffect(() => {
 		if (items.length === 0 || !selectedAddress) return;
 
-		const paymentItems = items.map((item) => ({
+		const paymentItems = items.map((item: CartItem) => ({
 			productId: String(item.product.id),
 			name: item.product.name,
 			price: item.product.price,
 			quantity: item.quantity,
 		}));
 
-		createOrder(paymentItems, selectedAddress.city).then(setClientSecret);
-	}, [items, selectedAddress]);
+		createOrderMutation
+			.mutateAsync({ items: paymentItems, cityName: selectedAddress.city })
+			.then(setClientSecret)
+			.catch(console.error);
+	}, [items, selectedAddress, createOrderMutation.mutateAsync]);
 
 	const appearance = {
 		theme: 'stripe' as const,
@@ -154,17 +150,7 @@ export default function PurchasePage() {
 							<AddressForm
 								onSuccess={async () => {
 									setShowAddressForm(false);
-									try {
-										const userData = await getUser();
-										if (userData) {
-											setUser(userData);
-											if (userData.addresses && userData.addresses.length > 0) {
-												setSelectedAddress(userData.addresses[0]);
-											}
-										}
-									} catch (e) {
-										console.error(e);
-									}
+									refetchUser();
 								}}
 								onCancel={() => {
 									if (user?.addresses?.length) {

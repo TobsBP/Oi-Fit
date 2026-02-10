@@ -1,23 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { getAllOrders } from '@/src/services/orders';
-import type { Order } from '@/src/types/order';
+import { useOrders } from '@/src/hooks/useOrders';
 import { getStatusColor } from '@/src/utils/StatusColor';
 import { translateStatus } from '@/src/utils/TranslateStatus';
 
 export default function OrdersManager() {
-	const [orders, setOrders] = useState<Order[]>([]);
-	const [loading, setLoading] = useState(true);
+	const { orders = [], isLoading } = useOrders();
 
-	useEffect(() => {
-		getAllOrders()
-			.then(setOrders)
-			.catch((error) => console.error('Error fetching orders:', error))
-			.finally(() => setLoading(false));
-	}, []);
-
-	if (loading) {
+	if (isLoading) {
 		return (
 			<div className="flex justify-center py-12">
 				<div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#3C5F2D]" />
