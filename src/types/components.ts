@@ -1,8 +1,8 @@
-import type { OrderStats } from './order';
 import type { Product } from './products';
+import type { SalesStats } from './sales.js';
 
 export interface DashboardStatsProps {
-	stats: OrderStats | null;
+	stats: SalesStats | null;
 	loading: boolean;
 }
 
