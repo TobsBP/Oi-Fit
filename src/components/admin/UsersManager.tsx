@@ -3,21 +3,8 @@
 import type React from 'react';
 import { useState } from 'react';
 import { useDeleteUser, useUpdateUser, useUsers } from '@/src/hooks/useUsers';
-import type { UserListItem } from '@/src/types/user';
-
-interface UserFormData {
-	name: string;
-	email: string;
-	phone: string;
-}
-
-interface ModalState {
-	open: boolean;
-	type: 'error' | 'confirm';
-	title: string;
-	message: string;
-	onConfirm?: () => void;
-}
+import type { ModalState } from '@/src/types/components';
+import type { UserFormData, UserListItem } from '@/src/types/user';
 
 function Modal({ modal, onClose }: { modal: ModalState; onClose: () => void }) {
 	if (!modal.open) return null;

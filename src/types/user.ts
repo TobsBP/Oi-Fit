@@ -36,7 +36,7 @@ export type UserUpdate = z.infer<typeof userUpdateSchema>;
 
 export const userFormDataSchema = z.object({
 	name: z.string(),
-	email: z.string().email(),
+	email: z.email(),
 	phone: z.string(),
 });
 

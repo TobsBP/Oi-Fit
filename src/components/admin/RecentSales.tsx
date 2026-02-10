@@ -1,35 +1,12 @@
 import type { RecentSalesProps } from '@/src/types/components';
-
-const statusLabels: Record<string, string> = {
-	paid: 'Pago',
-	pending: 'Pendente',
-	cancelled: 'Cancelado',
-	refunded: 'Reembolsado',
-};
-
-const statusColors: Record<string, string> = {
-	paid: 'bg-green-100 text-green-700',
-	pending: 'bg-yellow-100 text-yellow-700',
-	cancelled: 'bg-red-100 text-red-700',
-	refunded: 'bg-gray-100 text-gray-700',
-};
+import { statusColors } from '@/src/utils/consts/statusColors';
+import { statusLabels } from '@/src/utils/consts/statusLabels';
+import { formatCurrency, formatDate } from '@/src/utils/Formats';
 
 export default function RecentSales({
 	recentOrders,
 	loading,
 }: RecentSalesProps) {
-	const formatCurrency = (value: number) =>
-		new Intl.NumberFormat('pt-BR', {
-			style: 'currency',
-			currency: 'BRL',
-		}).format(value);
-
-	const formatDate = (date: string) =>
-		new Date(date).toLocaleDateString('pt-BR', {
-			day: '2-digit',
-			month: 'short',
-		});
-
 	if (loading) {
 		return (
 			<div className="rounded-xl border border-[#3C5F2D]/20 bg-white col-span-3 p-6 animate-pulse">

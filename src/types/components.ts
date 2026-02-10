@@ -38,3 +38,11 @@ export interface AddressFormProps {
 	onSuccess: () => void;
 	onCancel: () => void;
 }
+
+export interface ModalState {
+	open: boolean;
+	type: 'error' | 'confirm';
+	title: string;
+	message: string;
+	onConfirm?: () => void;
+}
