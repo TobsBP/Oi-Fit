@@ -1,15 +1,10 @@
 import type { DashboardStatsProps } from '@/src/types/components';
+import { formatCurrency } from '@/src/utils/Formats';
 
 export default function DashboardStats({
 	stats,
 	loading,
 }: DashboardStatsProps) {
-	const formatCurrency = (value: number) =>
-		new Intl.NumberFormat('pt-BR', {
-			style: 'currency',
-			currency: 'BRL',
-		}).format(value / 100);
-
 	const cards = stats
 		? [
 				{

@@ -1,12 +1,7 @@
 import type { OverviewProps } from '@/src/types/components';
+import { formatCurrency } from '@/src/utils/Formats';
 
 export default function Overview({ monthlyRevenue, loading }: OverviewProps) {
-	const formatCurrency = (value: number) =>
-		new Intl.NumberFormat('pt-BR', {
-			style: 'currency',
-			currency: 'BRL',
-		}).format(value / 100);
-
 	if (loading) {
 		return (
 			<div className="rounded-xl border border-[#3C5F2D]/20 bg-white col-span-4 p-6 animate-pulse">
