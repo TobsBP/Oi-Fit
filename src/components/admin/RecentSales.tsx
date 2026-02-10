@@ -22,7 +22,7 @@ export default function RecentSales({
 		new Intl.NumberFormat('pt-BR', {
 			style: 'currency',
 			currency: 'BRL',
-		}).format(value / 100);
+		}).format(value);
 
 	const formatDate = (date: string) =>
 		new Date(date).toLocaleDateString('pt-BR', {
