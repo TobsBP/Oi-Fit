@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useCart } from '@/src/context/CartContext';
+
+const WHATSAPP_NUMBER = '553598985318';
 
 export default function CartSidebar() {
 	const {
@@ -15,6 +16,23 @@ export default function CartSidebar() {
 	} = useCart();
 
 	if (!isOpen) return null;
+
+	function buildWhatsAppUrl() {
+		const lines = items.map(({ product, quantity, size, color }) => {
+			let line = `- ${product.name} (x${quantity}) — R$ ${(product.price * quantity).toFixed(2).replace('.', ',')}`;
+			if (size) line += ` | Tam: ${size}`;
+			if (color) line += ` | Cor: ${color}`;
+			return line;
+		});
+		const message = [
+			'Olá! Gostaria de fazer um pedido:',
+			'',
+			...lines,
+			'',
+			`*Total: R$ ${totalPrice.toFixed(2).replace('.', ',')}*`,
+		].join('\n');
+		return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+	}
 
 	return (
 		<>
@@ -161,13 +179,15 @@ export default function CartSidebar() {
 								R$ {totalPrice.toFixed(2)}
 							</span>
 						</div>
-						<Link
-							href="/pages/purchase"
+						<a
+							href={buildWhatsAppUrl()}
+							target="_blank"
+							rel="noopener noreferrer"
 							onClick={toggleCart}
-							className="block w-full bg-[#3C5F2D] text-white py-4 rounded-xl text-lg font-bold hover:bg-[#2d4722] transition-colors shadow-lg shadow-[#3C5F2D]/20 text-center"
+							className="block w-full bg-[#25D366] text-white py-4 rounded-xl text-lg font-bold hover:bg-[#1da851] transition-colors shadow-lg shadow-[#25D366]/20 text-center"
 						>
-							Finalizar Compra
-						</Link>
+							Finalizar pelo WhatsApp
+						</a>
 					</div>
 				)}
 			</div>
